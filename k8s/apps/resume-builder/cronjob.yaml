@@ -1,0 +1,84 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: resume-builder
+  namespace: dylanmtaylor
+  labels:
+    app: resume-builder
+spec:
+  # Run every hour
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: resume-builder
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: resume-builder
+          containers:
+            - name: builder
+              image: ubuntu:24.04
+              command: ["/bin/bash"]
+              args:
+                - -c
+                - |
+                  #!/bin/bash
+                  set -e
+
+                  echo "Installing dependencies..."
+                  export DEBIAN_FRONTEND=noninteractive
+                  apt-get update
+                  apt-get install -y texlive-xetex texlive-fonts-recommended texlive-font-utils git curl python3-pip python3-venv
+
+                  # Create virtual environment and install OCI CLI
+                  python3 -m venv /tmp/venv
+                  /tmp/venv/bin/pip install --no-cache-dir oci-cli                  echo "$(date): Starting resume build process..."
+
+                  # Clone the resume repository
+                  echo "Cloning resume repository..."
+                  rm -rf /tmp/resume
+                  git clone https://gitlab.com/dylanmtaylor/Dylan-Resume.git /tmp/resume
+                  cd /tmp/resume
+
+                  # Build the resume PDF
+                  echo "Building resume PDF with XeLaTeX..."
+                  mkdir -p /tmp/output
+                  xelatex --output-directory=/tmp/output /tmp/resume/dylan-resume.tex
+
+                  # Run again for references (LaTeX typically needs 2 passes)
+                  xelatex --output-directory=/tmp/output /tmp/resume/dylan-resume.tex
+
+                  # Check if PDF was created
+                  if [ ! -f /tmp/output/dylan-resume.pdf ]; then
+                    echo "ERROR: PDF was not generated!"
+                    exit 1
+                  fi
+
+                  # Rename to resume.pdf for consistency
+                  cp /tmp/output/dylan-resume.pdf /tmp/resume.pdf
+
+                  echo "Resume built successfully: $(ls -lh /tmp/resume.pdf)"
+
+                  # Upload to OCI Object Storage
+                  echo "Uploading to OCI Object Storage..."
+
+                  # Using oci-cli to upload
+                  /tmp/venv/bin/oci os object put \
+                    --bucket-name dylanmtaylor_public_files \
+                    --file /tmp/resume.pdf \
+                    --name resume.pdf \
+                    --force \
+                    --auth instance_principal
+
+                  echo "$(date): Resume uploaded successfully!"
+              resources:
+                requests:
+                  memory: "512Mi"
+                  cpu: "500m"
+                limits:
+                  memory: "2Gi"
+                  cpu: "1000m"
