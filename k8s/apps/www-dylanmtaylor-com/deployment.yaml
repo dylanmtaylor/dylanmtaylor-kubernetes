@@ -15,6 +15,9 @@ spec:
       labels:
         app: www-dylanmtaylor-com
     spec:
+      volumes:
+        - name: website-content
+          emptyDir: {}
       containers:
         - name: nginx-php-fpm
           image: richarvey/nginx-php-fpm:3.1.6
@@ -24,6 +27,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: www-dylanmtaylor-com-config
+          volumeMounts:
+            - name: website-content
+              mountPath: /var/www/html
           resources:
             requests:
               memory: "128Mi"
@@ -31,3 +37,49 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+
+        - name: content-updater
+          image: alpine:latest
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              #!/bin/sh
+              set -e
+
+              # Install required packages
+              apk add --no-cache curl unzip rsync
+
+              # Function to update content
+              update_content() {
+                echo "$(date): Updating website content..."
+                
+                # Download and extract the site
+                curl -Lo /tmp/site.zip https://gitlab.com/dylanmtaylor/dylanmtaylor.gitlab.io/-/jobs/artifacts/master/download?job=pages
+                rm -rf /tmp/site
+                unzip -o /tmp/site.zip -d /tmp/site
+                
+                # Sync to shared volume
+                rsync -rvh /tmp/site/public/ /var/www/html/ --delete
+                
+                echo "$(date): Content updated successfully"
+              }
+
+              # Initial update
+              update_content
+
+              # Update every 5 minutes
+              while true; do
+                sleep 300
+                update_content
+              done
+          volumeMounts:
+            - name: website-content
+              mountPath: /var/www/html
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
