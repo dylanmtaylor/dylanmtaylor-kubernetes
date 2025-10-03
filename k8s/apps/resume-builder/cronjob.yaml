@@ -31,12 +31,32 @@ spec:
 
                   echo "Installing dependencies..."
                   export DEBIAN_FRONTEND=noninteractive
-                  apt-get update
-                  apt-get install -y texlive-xetex texlive-fonts-recommended texlive-font-utils git curl python3-pip python3-venv
+
+                  # Speed up apt with parallel downloads and no recommendations
+                  echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99-no-recommends
+                  echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf.d/99-no-recommends
+                  echo 'Acquire::Languages "none";' >> /etc/apt/apt.conf.d/99-no-translation
+                  echo 'Acquire::Queue-Mode "host";' >> /etc/apt/apt.conf.d/99-parallel
+
+                  apt-get update -qq
+                  apt-get install -y --no-install-recommends \
+                    texlive-xetex \
+                    texlive-fonts-recommended \
+                    git \
+                    curl \
+                    ca-certificates \
+                    python3-pip \
+                    python3-venv
+
+                  # Clean up immediately to save space
+                  apt-get clean
+                  rm -rf /var/lib/apt/lists/*
 
                   # Create virtual environment and install OCI CLI
                   python3 -m venv /tmp/venv
-                  /tmp/venv/bin/pip install --no-cache-dir oci-cli                  echo "$(date): Starting resume build process..."
+                  /tmp/venv/bin/pip install --no-cache-dir oci-cli
+
+                  echo "$(date): Starting resume build process..."
 
                   # Clone the resume repository
                   echo "Cloning resume repository..."
@@ -58,10 +78,7 @@ spec:
                     exit 1
                   fi
 
-                  # Rename to resume.pdf for consistency
-                  cp /tmp/output/dylan-resume.pdf /tmp/resume.pdf
-
-                  echo "Resume built successfully: $(ls -lh /tmp/resume.pdf)"
+                  echo "Resume built successfully: $(ls -lh /tmp/output/dylan-resume.pdf)"
 
                   # Upload to OCI Object Storage
                   echo "Uploading to OCI Object Storage..."
@@ -69,8 +86,8 @@ spec:
                   # Using oci-cli to upload
                   /tmp/venv/bin/oci os object put \
                     --bucket-name dylanmtaylor_public_files \
-                    --file /tmp/resume.pdf \
-                    --name resume.pdf \
+                    --file /tmp/output/dylan-resume.pdf \
+                    --name dylan-resume.pdf \
                     --force \
                     --auth instance_principal
 
