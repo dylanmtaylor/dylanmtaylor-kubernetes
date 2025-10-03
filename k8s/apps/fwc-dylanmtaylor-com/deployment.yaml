@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fwc-dylanmtaylor-com
+  namespace: dylanmtaylor
+  labels:
+    app: fwc-dylanmtaylor-com
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fwc-dylanmtaylor-com
+  template:
+    metadata:
+      labels:
+        app: fwc-dylanmtaylor-com
+    spec:
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+          - name: timeout
+            value: "3"
+          - name: attempts
+            value: "3"
+      initContainers:
+      - name: wait-for-dns
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup gitlab.com; do echo waiting for DNS; sleep 2; done']
+      containers:
+      - name: nginx-php-fpm
+        image: richarvey/nginx-php-fpm:3.1.6
+        ports:
+        - containerPort: 80
+          name: http
+        envFrom:
+        - configMapRef:
+            name: fwc-dylanmtaylor-com-config
+        volumeMounts:
+        - name: www-errors
+          mountPath: /var/www/errors
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: www-errors
+        hostPath:
+          path: /var/www/errors
+          type: DirectoryOrCreate

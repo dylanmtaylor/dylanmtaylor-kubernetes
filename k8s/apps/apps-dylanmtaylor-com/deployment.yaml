@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apps-dylanmtaylor-com
+  namespace: dylanmtaylor
+  labels:
+    app: apps-dylanmtaylor-com
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apps-dylanmtaylor-com
+  template:
+    metadata:
+      labels:
+        app: apps-dylanmtaylor-com
+    spec:
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - name: wait-for-dns
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup gitlab.com; do echo waiting for DNS; sleep 2; done']
+      containers:
+      - name: nginx-php-fpm
+        image: richarvey/nginx-php-fpm:3.1.6
+        ports:
+        - containerPort: 80
+          name: http
+        envFrom:
+        - configMapRef:
+            name: apps-dylanmtaylor-com-config
+        volumeMounts:
+        - name: www-errors
+          mountPath: /var/www/errors
+          readOnly: true
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: www-errors
+        hostPath:
+          path: /var/www/errors
+          type: DirectoryOrCreate

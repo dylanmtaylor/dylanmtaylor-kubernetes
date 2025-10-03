@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: files-dylanmtaylor-com
+  namespace: dylanmtaylor
+  labels:
+    app: files-dylanmtaylor-com
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: files-dylanmtaylor-com

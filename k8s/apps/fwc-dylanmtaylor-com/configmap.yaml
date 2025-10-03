@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fwc-dylanmtaylor-com-config
+  namespace: dylanmtaylor
+data:
+  GIT_NAME: "Dylan M. Taylor"
+  GIT_EMAIL: "dylan@dylanmtaylor.com"
+  GIT_REPO: "https://gitlab.com/dylanmtaylor/fwc-dylanmtaylor-com.git"
+  VIRTUAL_HOST: "fwc.dylanmtaylor.com,fwc.dylanmtaylor.local"

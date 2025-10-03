@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apps-dylanmtaylor-com-config
+  namespace: dylanmtaylor
+data:
+  GIT_NAME: "Dylan M. Taylor"
+  GIT_EMAIL: "dylan@dylanmtaylor.com"
+  GIT_REPO: "https://gitlab.com/dylanmtaylor/apps-dylanmtaylor-com.git"
+  VIRTUAL_HOST: "apps.dylanmtaylor.com,apps.dylanmtaylor.local"

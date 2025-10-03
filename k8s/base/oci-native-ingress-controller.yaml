@@ -1,0 +1,339 @@
+---
+# Source: oci-native-ingress-controller/templates/deployment.yaml
+#
+# OCI Native Ingress Controller
+#
+# Copyright (c) 2023 Oracle America, Inc. and its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+#
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: native-ingress-controller-system
+---
+# Source: oci-native-ingress-controller/templates/serviceaccount.yaml
+#
+# OCI Native Ingress Controller
+#
+# Copyright (c) 2023 Oracle America, Inc. and its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+#
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: release-name-oci-native-ingress-controller
+  namespace: native-ingress-controller-system
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: oci-native-ingress-controller/templates/rbac.yaml
+#
+# OCI Native Ingress Controller
+#
+# Copyright (c) 2023 Oracle America, Inc. and its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+#
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: release-name-oci-native-ingress-controller-role
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+rules:
+- apiGroups: ["", "events.k8s.io"]
+  resources: [events]
+  verbs: [create, patch, update]
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [get, list, watch]
+- apiGroups: ["", "networking.k8s.io"]
+  resources: [services, ingresses, ingresses/status, ingressclasses]
+  verbs: [get, list, patch, update, watch]
+- apiGroups: ["", "ingress.oraclecloud.com"]
+  resources: [ingressclassparameters]
+  verbs: [get, list, patch, update, watch]
+- apiGroups: [""]
+  resources: [nodes, namespaces, endpoints]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [secrets]
+  verbs: [get, list, watch]
+- apiGroups: ["discovery.k8s.io"]
+  resources: [endpointslices]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [pods/status]
+  verbs: [patch]
+- apiGroups: [""]
+  resources: [serviceaccounts]
+  verbs: [list, watch]
+---
+# Source: oci-native-ingress-controller/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: release-name-oci-native-ingress-controller-rolebinding
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: release-name-oci-native-ingress-controller-role
+subjects:
+- kind: ServiceAccount
+  name: release-name-oci-native-ingress-controller
+  namespace: native-ingress-controller-system
+---
+# Source: oci-native-ingress-controller/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-name-oci-native-ingress-controller-leader-election-role
+  namespace: native-ingress-controller-system
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+rules:
+- apiGroups: ["coordination.k8s.io"]
+  resources: [leases]
+  verbs: [create]
+- apiGroups: ["coordination.k8s.io"]
+  resources: [leases]
+  resourceNames: [oci-native-ingress-controller]
+  verbs: [get, patch, update]
+---
+# Source: oci-native-ingress-controller/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-name-oci-native-ingress-controller-leader-election-rolebinding
+  namespace: native-ingress-controller-system
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-name-oci-native-ingress-controller-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: release-name-oci-native-ingress-controller
+  namespace: native-ingress-controller-system
+---
+# Source: oci-native-ingress-controller/templates/service.yaml
+#
+# OCI Native Ingress Controller
+#
+# Copyright (c) 2023 Oracle America, Inc. and its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: release-name-oci-native-ingress-controller
+  namespace: native-ingress-controller-system
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - name: webhook-server
+      port: 443
+      protocol: TCP
+      targetPort: webhook-server
+  selector:
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+---
+# Source: oci-native-ingress-controller/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-name-oci-native-ingress-controller
+  namespace: native-ingress-controller-system
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oci-native-ingress-controller
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oci-native-ingress-controller
+        app.kubernetes.io/instance: release-name
+    spec:
+      serviceAccountName: release-name-oci-native-ingress-controller
+      automountServiceAccountToken: true
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: release-name-oci-native-ingress-controller-tls
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: oci-native-ingress-controller
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          image: "ghcr.io/oracle/oci-native-ingress-controller:v1.4.2"
+          imagePullPolicy: Always
+          args: 
+          - --lease-lock-name=oci-native-ingress-controller
+          - --lease-lock-namespace=native-ingress-controller-system
+          - --authType=instance
+          - --auth-secret-name=oci-config
+          - --controller-class=oci.oraclecloud.com/native-ingress-controller
+          - --compartment-id=
+          - --subnet-id=
+          - --cluster-id=
+          - --metrics-backend=prometheus
+          - --metrics-port=2223
+          - --v=4
+          - --use-lb-compartment-for-certificates=false
+          - --emit-events=false
+          - --cert-deletion-grace-period-in-days=0
+          env:
+            - name: OCI_RESOURCE_PRINCIPAL_VERSION
+              value: "2.2"
+            - name: OCI_RESOURCE_PRINCIPAL_REGION
+              value: 
+            - name: OCI_SDK_DEFAULT_RETRY_ENABLED
+              value: "true"
+            - name: OCI_REGION_METADATA
+              value: ''
+          ports:
+            - name: webhook-server
+              containerPort: 9443
+              protocol: TCP
+            - name: metrics-server
+              containerPort: 2223
+          resources:
+            {}
+          volumeMounts:
+          - mountPath: /tmp/k8s-webhook-server/serving-certs
+            name: cert
+            readOnly: true
+      priorityClassName: "system-cluster-critical"
+---
+# Source: oci-native-ingress-controller/templates/pdb.yaml
+#
+# OCI Native Ingress Controller
+#
+# Copyright (c) 2023 Oracle America, Inc. and its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+#
+---
+# Source: oci-native-ingress-controller/templates/webhook.yaml
+#
+# OCI Native Ingress Controller
+#
+# Copyright (c) 2023 Oracle America, Inc. and its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl/
+#
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: oci-native-ingress-controller-webhook-serving-cert
+  namespace: native-ingress-controller-system
+spec:
+  dnsNames:
+  - oci-native-ingress-controller.native-ingress-controller-system
+  - oci-native-ingress-controller.native-ingress-controller-system.svc
+  - oci-native-ingress-controller.native-ingress-controller-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: oci-native-ingress-controller-ca
+  secretName: oci-native-ingress-controller-tls
+---
+# Source: oci-native-ingress-controller/templates/webhook.yaml
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: oci-native-ingress-controller-ca
+  namespace: native-ingress-controller-system
+spec:
+  selfSigned: {}
+---
+# Source: oci-native-ingress-controller/templates/webhook.yaml
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: release-name-oci-native-ingress-controller-webhook
+  labels:
+    helm.sh/chart: oci-native-ingress-controller-1.4.2
+    app.kubernetes.io/name: oci-native-ingress-controller
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "1.4.2"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    cert-manager.io/inject-ca-from: native-ingress-controller-system/oci-native-ingress-controller-webhook-serving-cert
+webhooks:
+- clientConfig:
+    service:
+      name: release-name-oci-native-ingress-controller
+      namespace: native-ingress-controller-system
+      path: /mutate-v1-pod
+  failurePolicy: Fail
+  name: podreadiness.ingress.oraclecloud.com
+  admissionReviewVersions:
+  - v1beta1
+  namespaceSelector:
+    matchExpressions:
+    
+    - key: podreadiness.ingress.oraclecloud.com/pod-readiness-gate-inject
+      operator: In
+      values:
+      - enabled
+    
+  objectSelector:
+    matchExpressions:
+    - key: app.kubernetes.io/name
+      operator: NotIn
+      values:
+      - oci-native-ingress-controller
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    resources:
+    - pods
+  sideEffects: None

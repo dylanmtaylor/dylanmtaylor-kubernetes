@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: dylanmtaylor
+
+resources:
+  # All application services
+  - www-dylanmtaylor-com/configmap.yaml
+  - www-dylanmtaylor-com/deployment.yaml
+  - www-dylanmtaylor-com/service.yaml
+
+  - apps-dylanmtaylor-com/configmap.yaml
+  - apps-dylanmtaylor-com/deployment.yaml
+  - apps-dylanmtaylor-com/service.yaml
+
+  - fwc-dylanmtaylor-com/configmap.yaml
+  - fwc-dylanmtaylor-com/deployment.yaml
+  - fwc-dylanmtaylor-com/service.yaml
+
+  - git-dylanmtaylor-com/configmap.yaml
+  - git-dylanmtaylor-com/deployment.yaml
+  - git-dylanmtaylor-com/service.yaml
+
+  - blog-dylanmtaylor-com/configmap.yaml
+  - blog-dylanmtaylor-com/deployment.yaml
+  - blog-dylanmtaylor-com/service.yaml
+
+  # Nginx Ingress
+  - ingress.yaml
+
+  # OCI NLB Ingress Service
+  - service.yaml

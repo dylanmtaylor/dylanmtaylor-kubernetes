@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: files-oci-pvc
+  namespace: dylanmtaylor
+  annotations:
+    volume.beta.kubernetes.io/storage-provisioner: blockvolume.csi.oraclecloud.com
+    volume.kubernetes.io/storage-provisioner: blockvolume.csi.oraclecloud.com
+spec:
+  storageClassName: oci-bv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Alternative: Use OCI Object Storage FSS (File Storage Service)
+# Uncomment this section if using OCI FSS instead of Block Volume
+#
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: files-oci-pvc
+#   namespace: dylanmtaylor
+# spec:
+#   storageClassName: oci-fss
+#   accessModes:
+#     - ReadWriteMany
+#   resources:
+#     requests:
+#       storage: 50Gi
