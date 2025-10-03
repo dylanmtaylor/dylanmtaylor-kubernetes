@@ -48,33 +48,33 @@ metadata:
     app.kubernetes.io/version: "1.4.2"
     app.kubernetes.io/managed-by: Helm
 rules:
-- apiGroups: ["", "events.k8s.io"]
-  resources: [events]
-  verbs: [create, patch, update]
-- apiGroups: [""]
-  resources: [pods]
-  verbs: [get, list, watch]
-- apiGroups: ["", "networking.k8s.io"]
-  resources: [services, ingresses, ingresses/status, ingressclasses]
-  verbs: [get, list, patch, update, watch]
-- apiGroups: ["", "ingress.oraclecloud.com"]
-  resources: [ingressclassparameters]
-  verbs: [get, list, patch, update, watch]
-- apiGroups: [""]
-  resources: [nodes, namespaces, endpoints]
-  verbs: [get, list, watch]
-- apiGroups: [""]
-  resources: [secrets]
-  verbs: [get, list, watch]
-- apiGroups: ["discovery.k8s.io"]
-  resources: [endpointslices]
-  verbs: [get, list, watch]
-- apiGroups: [""]
-  resources: [pods/status]
-  verbs: [patch]
-- apiGroups: [""]
-  resources: [serviceaccounts]
-  verbs: [list, watch]
+  - apiGroups: ["", "events.k8s.io"]
+    resources: [events]
+    verbs: [create, patch, update]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+  - apiGroups: ["", "networking.k8s.io"]
+    resources: [services, ingresses, ingresses/status, ingressclasses]
+    verbs: [get, list, patch, update, watch]
+  - apiGroups: ["", "ingress.oraclecloud.com"]
+    resources: [ingressclassparameters]
+    verbs: [get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources: [nodes, namespaces, endpoints]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: [get, list, watch]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [patch]
+  - apiGroups: [""]
+    resources: [serviceaccounts]
+    verbs: [list, watch]
 ---
 # Source: oci-native-ingress-controller/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -92,9 +92,9 @@ roleRef:
   kind: ClusterRole
   name: release-name-oci-native-ingress-controller-role
 subjects:
-- kind: ServiceAccount
-  name: release-name-oci-native-ingress-controller
-  namespace: native-ingress-controller-system
+  - kind: ServiceAccount
+    name: release-name-oci-native-ingress-controller
+    namespace: native-ingress-controller-system
 ---
 # Source: oci-native-ingress-controller/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -109,13 +109,13 @@ metadata:
     app.kubernetes.io/version: "1.4.2"
     app.kubernetes.io/managed-by: Helm
 rules:
-- apiGroups: ["coordination.k8s.io"]
-  resources: [leases]
-  verbs: [create]
-- apiGroups: ["coordination.k8s.io"]
-  resources: [leases]
-  resourceNames: [oci-native-ingress-controller]
-  verbs: [get, patch, update]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: [leases]
+    verbs: [create]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: [leases]
+    resourceNames: [oci-native-ingress-controller]
+    verbs: [get, patch, update]
 ---
 # Source: oci-native-ingress-controller/templates/rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -134,9 +134,9 @@ roleRef:
   kind: Role
   name: release-name-oci-native-ingress-controller-leader-election-role
 subjects:
-- kind: ServiceAccount
-  name: release-name-oci-native-ingress-controller
-  namespace: native-ingress-controller-system
+  - kind: ServiceAccount
+    name: release-name-oci-native-ingress-controller
+    namespace: native-ingress-controller-system
 ---
 # Source: oci-native-ingress-controller/templates/service.yaml
 #
@@ -194,10 +194,10 @@ spec:
       serviceAccountName: release-name-oci-native-ingress-controller
       automountServiceAccountToken: true
       volumes:
-      - name: cert
-        secret:
-          defaultMode: 420
-          secretName: release-name-oci-native-ingress-controller-tls
+        - name: cert
+          secret:
+            defaultMode: 420
+            secretName: release-name-oci-native-ingress-controller-tls
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -209,46 +209,45 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
+                - ALL
             readOnlyRootFilesystem: true
           image: "ghcr.io/oracle/oci-native-ingress-controller:v1.4.2"
           imagePullPolicy: Always
-          args: 
-          - --lease-lock-name=oci-native-ingress-controller
-          - --lease-lock-namespace=native-ingress-controller-system
-          - --authType=instance
-          - --auth-secret-name=oci-config
-          - --controller-class=oci.oraclecloud.com/native-ingress-controller
-          - --compartment-id=
-          - --subnet-id=
-          - --cluster-id=
-          - --metrics-backend=prometheus
-          - --metrics-port=2223
-          - --v=4
-          - --use-lb-compartment-for-certificates=false
-          - --emit-events=false
-          - --cert-deletion-grace-period-in-days=0
+          args:
+            - --lease-lock-name=oci-native-ingress-controller
+            - --lease-lock-namespace=native-ingress-controller-system
+            - --authType=instance
+            - --auth-secret-name=oci-config
+            - --controller-class=oci.oraclecloud.com/native-ingress-controller
+            - --compartment-id=
+            - --subnet-id=
+            - --cluster-id=
+            - --metrics-backend=prometheus
+            - --metrics-port=2223
+            - --v=4
+            - --use-lb-compartment-for-certificates=false
+            - --emit-events=false
+            - --cert-deletion-grace-period-in-days=0
           env:
             - name: OCI_RESOURCE_PRINCIPAL_VERSION
               value: "2.2"
             - name: OCI_RESOURCE_PRINCIPAL_REGION
-              value: 
+              value:
             - name: OCI_SDK_DEFAULT_RETRY_ENABLED
               value: "true"
             - name: OCI_REGION_METADATA
-              value: ''
+              value: ""
           ports:
             - name: webhook-server
               containerPort: 9443
               protocol: TCP
             - name: metrics-server
               containerPort: 2223
-          resources:
-            {}
+          resources: {}
           volumeMounts:
-          - mountPath: /tmp/k8s-webhook-server/serving-certs
-            name: cert
-            readOnly: true
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: cert
+              readOnly: true
       priorityClassName: "system-cluster-critical"
 ---
 # Source: oci-native-ingress-controller/templates/pdb.yaml
@@ -273,9 +272,9 @@ metadata:
   namespace: native-ingress-controller-system
 spec:
   dnsNames:
-  - oci-native-ingress-controller.native-ingress-controller-system
-  - oci-native-ingress-controller.native-ingress-controller-system.svc
-  - oci-native-ingress-controller.native-ingress-controller-system.svc.cluster.local
+    - oci-native-ingress-controller.native-ingress-controller-system
+    - oci-native-ingress-controller.native-ingress-controller-system.svc
+    - oci-native-ingress-controller.native-ingress-controller-system.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: oci-native-ingress-controller-ca
@@ -304,36 +303,35 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: native-ingress-controller-system/oci-native-ingress-controller-webhook-serving-cert
 webhooks:
-- clientConfig:
-    service:
-      name: release-name-oci-native-ingress-controller
-      namespace: native-ingress-controller-system
-      path: /mutate-v1-pod
-  failurePolicy: Fail
-  name: podreadiness.ingress.oraclecloud.com
-  admissionReviewVersions:
-  - v1beta1
-  namespaceSelector:
-    matchExpressions:
-    
-    - key: podreadiness.ingress.oraclecloud.com/pod-readiness-gate-inject
-      operator: In
-      values:
-      - enabled
-    
-  objectSelector:
-    matchExpressions:
-    - key: app.kubernetes.io/name
-      operator: NotIn
-      values:
-      - oci-native-ingress-controller
-  rules:
-  - apiGroups:
-    - ""
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    resources:
-    - pods
-  sideEffects: None
+  - clientConfig:
+      service:
+        name: release-name-oci-native-ingress-controller
+        namespace: native-ingress-controller-system
+        path: /mutate-v1-pod
+    failurePolicy: Fail
+    name: podreadiness.ingress.oraclecloud.com
+    admissionReviewVersions:
+      - v1beta1
+    namespaceSelector:
+      matchExpressions:
+        - key: podreadiness.ingress.oraclecloud.com/pod-readiness-gate-inject
+          operator: In
+          values:
+            - enabled
+
+    objectSelector:
+      matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: NotIn
+          values:
+            - oci-native-ingress-controller
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
