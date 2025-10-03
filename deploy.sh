@@ -5,30 +5,43 @@ echo "======================================"
 echo "Deploying Dylan Taylor Kubernetes Apps"
 echo "======================================"
 
-# Install cert-manager (required by OCI Native Ingress Controller)
+# Check if cert-manager is already installed
 echo ""
-echo "Installing cert-manager..."
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
+    echo "cert-manager is already installed, skipping installation..."
+else
+    echo "Installing cert-manager..."
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
 
-# Wait for cert-manager to be ready
-echo "Waiting for cert-manager to be ready..."
-kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager
-kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager
-kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+    # Wait for cert-manager to be ready
+    echo "Waiting for cert-manager to be ready..."
+    kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager
+    kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager
+    kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+fi
 
-# Install nginx ingress controller
+# Check if nginx ingress controller is already installed
 echo ""
-echo "Installing nginx ingress controller..."
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml
+if kubectl get namespace ingress-nginx &>/dev/null && kubectl get deployment ingress-nginx-controller -n ingress-nginx &>/dev/null; then
+    echo "nginx ingress controller is already installed, skipping installation..."
+else
+    echo "Installing nginx ingress controller..."
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml
 
-# Wait for nginx ingress controller to be ready
-echo "Waiting for nginx ingress controller to be ready..."
-kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
+    # Wait for nginx ingress controller to be ready
+    echo "Waiting for nginx ingress controller to be ready..."
+    kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
+fi
 
 # Configure nginx ingress to use OCI NLB with static IP
 echo ""
 echo "Configuring nginx ingress to use OCI Network Load Balancer with static IP..."
-kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"metadata":{"annotations":{"oci.oraclecloud.com/load-balancer-type":"nlb"}},"spec":{"loadBalancerIP":"129.80.142.204"}}'
+NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+if [ -z "$NLB_IP" ]; then
+    echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
+    exit 1
+fi
+kubectl patch svc ingress-nginx-controller -n ingress-nginx -p "{\"metadata\":{\"annotations\":{\"oci.oraclecloud.com/load-balancer-type\":\"nlb\"}},\"spec\":{\"loadBalancerIP\":\"$NLB_IP\"}}"
 
 # Apply base resources using kustomize
 echo ""
@@ -37,8 +50,16 @@ kubectl apply -k k8s/base/
 
 # Install OCI Native Ingress Controller
 echo ""
-echo "Installing OCI Native Ingress Controller..."
-kubectl apply -f k8s/base/oci-native-ingress-controller.yaml
+echo "Checking if OCI Native Ingress Controller is already installed..."
+if kubectl get deployment release-name-oci-native-ingress-controller -n native-ingress-controller-system 2>/dev/null | grep -q release-name-oci-native-ingress-controller; then
+    echo "OCI Native Ingress Controller is already installed, skipping installation..."
+else
+    echo "Installing OCI Native Ingress Controller..."
+    kubectl apply -f k8s/base/oci-native-ingress-controller.yaml
+    # Wait for OCI Native Ingress Controller to be ready
+    echo "Waiting for OCI Native Ingress Controller to be ready..."
+    kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
+fi
 
 # Apply all apps using kustomize
 echo ""
