@@ -25,6 +25,16 @@ spec:
                 name: www-dylanmtaylor-com
                 port:
                   number: 80
+    - host: www.dylanmtaylor.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: www-dylanmtaylor-com
+                port:
+                  number: 80
     - host: dylanmtaylor.com
       http:
         paths:

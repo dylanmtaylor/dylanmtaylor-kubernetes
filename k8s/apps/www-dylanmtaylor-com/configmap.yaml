@@ -4,4 +4,6 @@ metadata:
   name: www-dylanmtaylor-com-config
   namespace: dylanmtaylor
 data:
-  VIRTUAL_HOST: "www.dylanmtaylor.com,dylanmtaylor.com,dylanmtaylor.local,localhost"
+  GIT_NAME: "Dylan M. Taylor"
+  GIT_EMAIL: "dylan@dylanmtaylor.com"
+  VIRTUAL_HOST: "www.dylanmtaylor.com,www.dylanmtaylor.local,dylanmtaylor.com,dylanmtaylor.local,localhost"

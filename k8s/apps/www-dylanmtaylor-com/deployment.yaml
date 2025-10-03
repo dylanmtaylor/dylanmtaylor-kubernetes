@@ -16,18 +16,18 @@ spec:
         app: www-dylanmtaylor-com
     spec:
       containers:
-      - name: nginx-php-fpm
-        image: richarvey/nginx-php-fpm:3.1.6
-        ports:
-        - containerPort: 80
-          name: http
-        envFrom:
-        - configMapRef:
-            name: www-dylanmtaylor-com-config
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: nginx-php-fpm
+          image: richarvey/nginx-php-fpm:3.1.6
+          ports:
+            - containerPort: 80
+              name: http
+          envFrom:
+            - configMapRef:
+                name: www-dylanmtaylor-com-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

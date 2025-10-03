@@ -25,10 +25,10 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 echo "Waiting for nginx ingress controller to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
 
-# Configure nginx ingress to use OCI NLB
+# Configure nginx ingress to use OCI NLB with static IP
 echo ""
-echo "Configuring nginx ingress to use OCI Network Load Balancer..."
-kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"metadata":{"annotations":{"oci.oraclecloud.com/load-balancer-type":"nlb"}}}'
+echo "Configuring nginx ingress to use OCI Network Load Balancer with static IP..."
+kubectl patch svc ingress-nginx-controller -n ingress-nginx -p '{"metadata":{"annotations":{"oci.oraclecloud.com/load-balancer-type":"nlb"}},"spec":{"loadBalancerIP":"129.80.142.204"}}'
 
 # Apply base resources using kustomize
 echo ""
