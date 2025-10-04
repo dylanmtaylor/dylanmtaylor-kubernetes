@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Create required namespaces first
+  - namespaces.yaml
+
+  # Infrastructure components
+  - cert-manager.yaml
+  - oci-native-ingress.yaml
+  - ingress-nginx.yaml
+  - monitoring.yaml
+
+# Global patches for infrastructure
+patches:
+  # Patch LoadBalancer IP from DNS resolution
+  - patch: |
+      - op: replace
+        path: /spec/values/controller/service/loadBalancerIP
+        value: "129.159.247.180" # Replace with actual nlb.dylanmtaylor.com IP
+    target:
+      kind: HelmRelease
+      name: ingress-nginx

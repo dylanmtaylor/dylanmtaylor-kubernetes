@@ -1,0 +1,120 @@
+---
+# GitRepository for all application manifests
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: dylanmtaylor-kubernetes
+  namespace: flux-system
+spec:
+  interval: 1m
+  ref:
+    branch: main
+  url: https://github.com/dylanmtaylor/dylanmtaylor-kubernetes
+---
+# All Applications, Namespace, and Ingress
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: applications
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: "./manifests/apps"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: dylanmtaylor-kubernetes
+  dependsOn:
+    - name: ingress-nginx
+    - name: cert-manager
+  timeout: 10m
+  retryInterval: 30s
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: www-dylanmtaylor-com
+      namespace: dylanmtaylor
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: blog-dylanmtaylor-com
+      namespace: dylanmtaylor
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: apps-dylanmtaylor-com
+      namespace: dylanmtaylor
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: files-dylanmtaylor-com
+      namespace: dylanmtaylor
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: git-dylanmtaylor-com
+      namespace: dylanmtaylor
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: fwc-dylanmtaylor-com
+      namespace: dylanmtaylor
+    - apiVersion: batch/v1
+      kind: CronJob
+      name: resume-builder
+      namespace: dylanmtaylor
+    - apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      name: dylanmtaylor-ingress
+      namespace: dylanmtaylor
+  patches:
+    # Production resource limits and replica counts
+    - patch: |-
+        - op: replace
+          path: /spec/replicas
+          value: 2
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/limits/memory
+          value: "512Mi"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/requests/memory
+          value: "256Mi"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/limits/cpu
+          value: "500m"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/requests/cpu
+          value: "100m"
+      target:
+        kind: Deployment
+        name: www-dylanmtaylor-com
+    - patch: |-
+        - op: replace
+          path: /spec/replicas
+          value: 2
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/limits/memory
+          value: "1Gi"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/requests/memory
+          value: "512Mi"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/limits/cpu
+          value: "1000m"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/requests/cpu
+          value: "200m"
+      target:
+        kind: Deployment
+        name: apps-dylanmtaylor-com
+    - patch: |-
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/limits/memory
+          value: "256Mi"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/requests/memory
+          value: "128Mi"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/limits/cpu
+          value: "250m"
+        - op: replace
+          path: /spec/template/spec/containers/0/resources/requests/cpu
+          value: "50m"
+      target:
+        kind: Deployment
+        labelSelector: app.kubernetes.io/component=static-site

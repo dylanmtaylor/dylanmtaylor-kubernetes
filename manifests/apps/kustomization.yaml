@@ -4,6 +4,9 @@ kind: Kustomization
 namespace: dylanmtaylor
 
 resources:
+  # Namespace
+  - namespace.yaml
+
   # All application services
   - www-dylanmtaylor-com/configmap.yaml
   - www-dylanmtaylor-com/deployment.yaml

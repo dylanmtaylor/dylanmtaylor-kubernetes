@@ -1,0 +1,57 @@
+---
+# Prometheus Stack for Monitoring
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: "51.x.x"
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+  values:
+    grafana:
+      adminPassword: "${GRAFANA_PASSWORD}"
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - grafana.dylanmtaylor.com
+        tls:
+          - secretName: grafana-tls
+            hosts:
+              - grafana.dylanmtaylor.com
+    prometheus:
+      ingress:
+        enabled: true
+        ingressClassName: nginx
+        hosts:
+          - prometheus.dylanmtaylor.com
+        tls:
+          - secretName: prometheus-tls
+            hosts:
+              - prometheus.dylanmtaylor.com
+      prometheusSpec:
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: oci
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 10Gi
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://prometheus-community.github.io/helm-charts
