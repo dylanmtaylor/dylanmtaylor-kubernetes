@@ -65,10 +65,28 @@ fi
 echo ""
 echo "Applying OCI credentials secret..."
 if [ -f "/var/home/dylan/.oci/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
-    # Read the private key and escape it for sed
-    PRIVATE_KEY=$(awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' /var/home/dylan/.oci/oci_api_key.pem)
-    # Replace the placeholder with actual key content and apply
-    sed "s|    -----BEGIN RSA PRIVATE KEY-----\n    <YOUR_PRIVATE_KEY_CONTENT_HERE>\n    -----END RSA PRIVATE KEY-----|${PRIVATE_KEY}|" k8s/apps/resume-builder/secret.yaml | kubectl apply -f -
+    # Create a temporary file with the private key substituted
+    TEMP_SECRET=$(mktemp)
+    
+    # Read the secret file and replace the placeholder section
+    awk '
+    /oci_api_key\.pem: \|/ {
+        print $0
+        # Skip the placeholder lines
+        getline; getline; getline
+        # Insert the actual private key
+        while ((getline line < "/var/home/dylan/.oci/oci_api_key.pem") > 0) {
+            print "    " line
+        }
+        close("/var/home/dylan/.oci/oci_api_key.pem")
+        next
+    }
+    { print }
+    ' k8s/apps/resume-builder/secret.yaml > "$TEMP_SECRET"
+    
+    # Apply the secret and clean up
+    kubectl apply -f "$TEMP_SECRET"
+    rm -f "$TEMP_SECRET"
 else
     echo "Warning: OCI API key or secret template not found, skipping OCI credentials secret..."
 fi
