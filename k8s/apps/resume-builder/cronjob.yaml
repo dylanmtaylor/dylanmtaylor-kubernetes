@@ -31,6 +31,12 @@ spec:
 
                   echo "$(date): Starting resume build process..."
 
+                  # Set up OCI CLI configuration from secret
+                  mkdir -p /root/.oci
+                  cp /oci-credentials/config /root/.oci/config
+                  cp /oci-credentials/oci_api_key.pem /root/.oci/oci_api_key.pem
+                  chmod 600 /root/.oci/oci_api_key.pem
+
                   # Clone the resume repository
                   echo "Cloning resume repository..."
                   rm -rf /tmp/resume
@@ -56,37 +62,25 @@ spec:
                   # Upload to OCI Object Storage
                   echo "Uploading to OCI Object Storage..."
 
-                  # Debug: Check what authentication is available
-                  echo "Testing OCI authentication..."
-                  /opt/venv/bin/oci iam region list --auth instance_principal || echo "Instance principal auth failed"
-
-                  # Get namespace
+                  # Get namespace (using API key auth, no --auth flag needed)
                   echo "Getting OCI namespace..."
-                  NAMESPACE=$(/opt/venv/bin/oci os ns get --auth instance_principal --query data --raw-output)
+                  NAMESPACE=$(/opt/venv/bin/oci os ns get --query data --raw-output)
                   echo "Namespace: $NAMESPACE"
 
-                  # List buckets to verify access
-                  echo "Listing accessible buckets..."
-                  /opt/venv/bin/oci os bucket list --namespace-name "$NAMESPACE" --compartment-id "$(echo $OCI_RESOURCE_PRINCIPAL_RPT | base64 -d | jq -r '.res_tenant' 2>/dev/null || echo 'unknown')" --auth instance_principal || echo "Failed to list buckets"
-
-                  # Try to get bucket details
-                  echo "Checking if bucket exists..."
-                  /opt/venv/bin/oci os bucket get \
-                    --namespace-name "$NAMESPACE" \
-                    --bucket-name dylanmtaylor_public_files \
-                    --auth instance_principal || echo "Bucket not found or no access"
-
                   # Upload the file
-                  echo "Attempting upload..."
+                  echo "Uploading file..."
                   /opt/venv/bin/oci os object put \
                     --namespace-name "$NAMESPACE" \
                     --bucket-name dylanmtaylor_public_files \
                     --file /tmp/output/dylan-resume.pdf \
                     --name dylan-resume.pdf \
-                    --force \
-                    --auth instance_principal
+                    --force
 
                   echo "$(date): Resume uploaded successfully!"
+              volumeMounts:
+                - name: oci-credentials
+                  mountPath: /oci-credentials
+                  readOnly: true
               resources:
                 requests:
                   memory: "512Mi"
@@ -94,3 +88,8 @@ spec:
                 limits:
                   memory: "2Gi"
                   cpu: "1000m"
+          volumes:
+            - name: oci-credentials
+              secret:
+                secretName: oci-credentials
+                defaultMode: 0400

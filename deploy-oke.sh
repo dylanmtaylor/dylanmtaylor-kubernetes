@@ -61,6 +61,18 @@ else
     kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
 fi
 
+# Apply OCI credentials secret for resume-builder
+echo ""
+echo "Applying OCI credentials secret..."
+if [ -f "/var/home/dylan/.oci/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
+    # Read the private key and escape it for sed
+    PRIVATE_KEY=$(awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' /var/home/dylan/.oci/oci_api_key.pem)
+    # Replace the placeholder with actual key content and apply
+    sed "s|    -----BEGIN RSA PRIVATE KEY-----\n    <YOUR_PRIVATE_KEY_CONTENT_HERE>\n    -----END RSA PRIVATE KEY-----|${PRIVATE_KEY}|" k8s/apps/resume-builder/secret.yaml | kubectl apply -f -
+else
+    echo "Warning: OCI API key or secret template not found, skipping OCI credentials secret..."
+fi
+
 # Apply all apps using kustomize
 echo ""
 echo "Deploying all services..."
