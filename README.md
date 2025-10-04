@@ -11,9 +11,7 @@ This cluster powers dylanmtaylor.com and all its subdomains using Flux GitOps fo
 ### Infrastructure
 - **Cluster**: Oracle Kubernetes Engine (OKE) on 4x ARM64 Ampere A1 instances (1 CPU, 4 GiB RAM each - "always free" tier)
 - **GitOps**: Flux CD for declarative, Git-driven deployments
-- **Ingress Controllers**:
-  - **OCI Native Ingress Controller** - Native OCI load balancer integration (recommended for production)
-  - **NGINX Ingress Controller** - Alternative ingress option with OCI Network Load Balancer
+- **Ingress**: NGINX Ingress Controller with OCI Network Load Balancer (static IP)
 - **SSL**: cert-manager for automatic Let's Encrypt certificates
 - **Networking**: Flannel CNI for pod networking
 - **Storage**: OCI Object Storage for persistent data

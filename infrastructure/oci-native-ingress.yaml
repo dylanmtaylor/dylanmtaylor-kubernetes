@@ -23,7 +23,7 @@ spec:
   chart:
     spec:
       chart: oci-native-ingress-controller
-      version: '1.4.2'
+      version: "1.4.2"
       sourceRef:
         kind: HelmRepository
         name: oci-native-ingress-controller
@@ -41,44 +41,44 @@ spec:
     # Authentication configuration
     authType: instance
     authSecretName: oci-config
-    
+
     # Controller configuration
     controllerClass: oci.oraclecloud.com/native-ingress-controller
-    
+
     # OCI configuration - these will be auto-detected or can be set
     compartmentId: ""
     subnetId: ""
     clusterId: ""
-    
+
     # Metrics configuration
     metricsBackend: prometheus
     metricsPort: 2223
-    
+
     # Certificate management
     useLBCompartmentForCertificates: false
     certDeletionGracePeriodInDays: 0
-    
+
     # Event emission
     emitEvents: false
-    
+
     # Image configuration
     image:
       repository: ghcr.io/oracle/oci-native-ingress-controller
       tag: v1.4.2
       pullPolicy: Always
-    
+
     # Resource configuration
     resources: {}
-    
+
     # Replica configuration
     replicaCount: 1
-    
+
     # Security context
     securityContext:
       runAsNonRoot: true
       runAsUser: 1000
       seccompProfile:
         type: RuntimeDefault
-    
+
     # Priority class
     priorityClassName: system-cluster-critical
