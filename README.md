@@ -17,7 +17,7 @@ This cluster powers the entirety of dylanmtaylor.com, all orchestrated with the 
 ### Web Services
 Running on pods using Nginx OCI images fronted by the ingress controller, with automation to pull static site contents from GitLab and serve it.
 
-### Resume Generation Pipeline**
+### Resume Generation Pipeline
 A CronJob that:
 - Clones my resume repo from GitLab
 - Compiles the raw LaTeX files to a PDF
