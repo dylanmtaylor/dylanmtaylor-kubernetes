@@ -21,8 +21,8 @@ spec:
         type: LoadBalancer
         annotations:
           oci.oraclecloud.com/load-balancer-type: "nlb"
-        # Static IP will be configured by bootstrap-flux.sh
-        # This matches the original deploy-oke.sh approach
+        # Static IP for nlb.dylanmtaylor.com
+        loadBalancerIP: "129.159.247.180"
       metrics:
         enabled: true
         serviceMonitor:

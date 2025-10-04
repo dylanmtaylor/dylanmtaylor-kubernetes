@@ -171,25 +171,6 @@ wait_for_condition "ingress-nginx controller" \
     "kubectl get deployment ingress-nginx-controller -n ingress-nginx" 600
 
 # ============================================
-# CONFIGURE OCI LOAD BALANCER
-# ============================================
-echo ""
-echo "[NETWORK] Configuring OCI Network Load Balancer..."
-
-# Resolve static IP from DNS
-NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-
-if [ -n "$NLB_IP" ]; then
-    echo "[CONFIG] Setting static IP: $NLB_IP"
-    kubectl patch svc ingress-nginx-controller -n ingress-nginx -p \
-        "{\"metadata\":{\"annotations\":{\"oci.oraclecloud.com/load-balancer-type\":\"nlb\"}},\"spec\":{\"loadBalancerIP\":\"$NLB_IP\"}}"
-    echo "[OK] Load balancer configured"
-else
-    echo "[WARN]  Could not resolve nlb.dylanmtaylor.com"
-    echo "   Load balancer will use dynamic IP"
-fi
-
-# ============================================
 # WAIT FOR APPLICATIONS
 # ============================================
 echo ""
