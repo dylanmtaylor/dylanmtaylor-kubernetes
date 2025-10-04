@@ -6,7 +6,7 @@ metadata:
   labels:
     app: www-dylanmtaylor-com
 spec:
-  replicas: 2
+  replicas: 4
   selector:
     matchLabels:
       app: www-dylanmtaylor-com

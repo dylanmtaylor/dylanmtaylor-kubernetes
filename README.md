@@ -11,7 +11,7 @@ This cluster powers the entirety of dylanmtaylor.com, all orchestrated with the 
 - **Ingress**: NGINX Ingress Controller using an OCI native Network Load Balancer (static IP allocation)
 - **Networking**: Pod networking is handled with flannel
 - **Storage**: OCI Object Storage for persistent data (files served from files.dylanmtaylor.com)
-- **Automation**: Everything deployed with a single script, and 
+- **Automation**: Everything deployed with a single script, and Kustomize is used for configuration management
 - **Infrastructure**: Deployed via Terraform, see https://gitlab.com/dylanmtaylor/terraform-dylanmtaylor-com
 
 ### Web Services
