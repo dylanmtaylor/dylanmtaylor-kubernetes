@@ -5,6 +5,9 @@ echo "======================================"
 echo "Deploying Dylan Taylor Kubernetes Apps"
 echo "======================================"
 
+# Setup oke-admin service account
+kubectl apply -f k8s/base/oke-admin-service-account.yaml
+
 # Check if cert-manager is already installed
 echo ""
 if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
