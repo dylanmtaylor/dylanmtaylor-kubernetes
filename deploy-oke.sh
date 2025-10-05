@@ -20,6 +20,19 @@ else
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
 fi
 
+# Install OCI Native Ingress Controller
+echo ""
+echo "Checking if OCI Native Ingress Controller is already installed..."
+if kubectl get deployment release-name-oci-native-ingress-controller -n native-ingress-controller-system 2>/dev/null | grep -q release-name-oci-native-ingress-controller; then
+    echo "OCI Native Ingress Controller is already installed, skipping installation..."
+else
+    echo "Installing OCI Native Ingress Controller..."
+    kubectl apply -f k8s/base/oci-native-ingress-controller.yaml
+    # Wait for OCI Native Ingress Controller to be ready
+    echo "Waiting for OCI Native Ingress Controller to be ready..."
+    kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
+fi
+
 # Check if nginx ingress controller is already installed
 echo ""
 if kubectl get namespace ingress-nginx &>/dev/null && kubectl get deployment ingress-nginx-controller -n ingress-nginx &>/dev/null; then
@@ -51,24 +64,10 @@ else
     kubectl scale deployment ingress-nginx-controller -n ingress-nginx --replicas=4
 fi
 
-
 # Apply base resources using kustomize
 echo ""
 echo "Applying base resources..."
 kubectl apply -k k8s/base/
-
-# Install OCI Native Ingress Controller
-echo ""
-echo "Checking if OCI Native Ingress Controller is already installed..."
-if kubectl get deployment release-name-oci-native-ingress-controller -n native-ingress-controller-system 2>/dev/null | grep -q release-name-oci-native-ingress-controller; then
-    echo "OCI Native Ingress Controller is already installed, skipping installation..."
-else
-    echo "Installing OCI Native Ingress Controller..."
-    kubectl apply -f k8s/base/oci-native-ingress-controller.yaml
-    # Wait for OCI Native Ingress Controller to be ready
-    echo "Waiting for OCI Native Ingress Controller to be ready..."
-    kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
-fi
 
 # Apply OCI credentials secret for resume-builder
 echo ""
