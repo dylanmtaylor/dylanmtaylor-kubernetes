@@ -26,22 +26,31 @@ if kubectl get namespace ingress-nginx &>/dev/null && kubectl get deployment ing
     echo "nginx ingress controller is already installed, skipping installation..."
 else
     echo "Installing nginx ingress controller..."
-    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml
+
+    # Get NLB IP address from DNS
+    NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+    if [ -z "$NLB_IP" ]; then
+        echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
+        exit 1
+    fi
+
+    export NLB_IP
+
+    # Download, patch, and apply the manifest for the nginx ingress controller
+    # We do this all in memory to avoid creating an ALB by default before it is patched, which is not desired.
+    curl -sSL https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml | \
+    yq eval '(select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."oci.oraclecloud.com/load-balancer-type") = "nlb" | (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .spec.loadBalancerIP) = env(NLB_IP)' - | \
+    kubectl apply -f -
 
     # Wait for nginx ingress controller to be ready
     echo "Waiting for nginx ingress controller to be ready..."
     kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
+
+    # Scale nginx ingress controller to 4 replicas for high availability
+    echo "Scaling nginx ingress controller to 4 replicas..."
+    kubectl scale deployment ingress-nginx-controller -n ingress-nginx --replicas=4
 fi
 
-# Configure nginx ingress to use OCI NLB with static IP
-echo ""
-echo "Configuring nginx ingress to use OCI Network Load Balancer with static IP..."
-NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-if [ -z "$NLB_IP" ]; then
-    echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
-    exit 1
-fi
-kubectl patch svc ingress-nginx-controller -n ingress-nginx -p "{\"metadata\":{\"annotations\":{\"oci.oraclecloud.com/load-balancer-type\":\"nlb\"}},\"spec\":{\"loadBalancerIP\":\"$NLB_IP\"}}"
 
 # Apply base resources using kustomize
 echo ""
