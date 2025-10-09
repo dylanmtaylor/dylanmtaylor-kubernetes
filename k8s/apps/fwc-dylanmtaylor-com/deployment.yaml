@@ -30,7 +30,7 @@ spec:
         command: ['sh', '-c', 'until nslookup gitlab.com; do echo waiting for DNS; sleep 2; done']
       containers:
       - name: nginx-php-fpm
-        image: richarvey/nginx-php-fpm:3.1.6
+        image: docker.io/richarvey/nginx-php-fpm:3.1.6
         ports:
         - containerPort: 80
           name: http

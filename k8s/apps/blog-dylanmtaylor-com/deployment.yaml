@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: web-redirect
-        image: ajoergensen/web-redirect:latest
+        image: docker.io/ajoergensen/web-redirect:latest
         ports:
         - containerPort: 80
           name: http
