@@ -8,6 +8,14 @@ echo "======================================"
 # Setup oke-admin service account
 kubectl apply -f k8s/base/oke-admin-service-account.yaml
 
+# yq is a pre-requisite
+if ! command -v yq &>/dev/null; then
+  ARCH=$(case "$(uname -m)" in x86_64) echo amd64;; aarch64|arm64) echo arm64;; esac)
+  if [ -n "$ARCH" ]; then
+    mkdir -p ./bin && curl -sL "[https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$](https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$){ARCH}" -o ./bin/yq && chmod +x ./bin/yq && export PATH="$(pwd)/bin:$PATH"
+  fi
+fi
+
 # Check if cert-manager is already installed
 echo ""
 if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
