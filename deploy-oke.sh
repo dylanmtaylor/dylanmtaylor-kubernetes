@@ -12,7 +12,11 @@ kubectl apply -f k8s/base/oke-admin-service-account.yaml
 if ! command -v yq &>/dev/null; then
   ARCH=$(case "$(uname -m)" in x86_64) echo amd64;; aarch64|arm64) echo arm64;; esac)
   if [ -n "$ARCH" ]; then
-    mkdir -p ./bin && curl -sL "[https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$](https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$){ARCH}" -o ./bin/yq && chmod +x ./bin/yq && export PATH="$(pwd)/bin:$PATH"
+    set -x
+    mkdir -p ./bin
+    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$ARCH -O bin/yq
+    chmod +x ./bin/yq
+    export PATH="$(pwd)/bin:$PATH"
   fi
 fi
 
