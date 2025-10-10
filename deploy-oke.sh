@@ -66,7 +66,12 @@ else
     # Download, patch, and apply the manifest for the nginx ingress controller
     # We do this all in memory to avoid creating an ALB by default before it is patched, which is not desired.
     curl -sSL https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml | \
-    yq eval '(select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."oci.oraclecloud.com/load-balancer-type") = "nlb" | (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."oci-network-load-balancer.oraclecloud.com/is-preserve-source") = "false" | (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .spec.loadBalancerIP) = env(NLB_IP)' - | \
+    yq eval '(select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."oci.oraclecloud.com/load-balancer-type") = "lb" |
+    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape") = "flexible" | 
+    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape-flex-min") = "10" | 
+    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape-flex-max") = "10" | 
+    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape-internal") = "false" | 
+    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .spec.loadBalancerIP) = env(NLB_IP)' - | \
     kubectl apply -f -
 
     # Wait for nginx ingress controller to be ready
