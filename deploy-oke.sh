@@ -13,7 +13,7 @@ if ! command -v yq &>/dev/null; then
   ARCH=$(case "$(uname -m)" in x86_64) echo amd64;; aarch64|arm64) echo arm64;; esac)
   if [ -n "$ARCH" ]; then
     mkdir -p ./bin
-    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$ARCH -O bin/yq
+    wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$ARCH -O bin/yq
     chmod +x ./bin/yq
     export PATH="$(pwd)/bin:$PATH"
   fi
