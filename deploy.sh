@@ -46,6 +46,10 @@ echo ""
 echo "Applying base resources..."
 kubectl apply -k k8s/base/
 
+echo ""
+echo "Deploying monitoring stack (Prometheus)..."
+kubectl kustomize k8s/monitoring/ --enable-helm | kubectl apply --server-side=true -f -
+
 # Apply OCI credentials secret for resume-builder
 echo ""
 echo "Applying OCI credentials secret..."
