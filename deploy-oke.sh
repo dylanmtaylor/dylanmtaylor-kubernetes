@@ -85,7 +85,7 @@ kubectl patch envoyproxy oci-loadbalancer -n dylanmtaylor --type='merge' -p="{\"
 # Apply OCI credentials secret for resume-builder
 echo ""
 echo "Applying OCI credentials secret..."
-if [ -f "/var/home/dylan/.oci/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
+if [ -f "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
     # Create a temporary file with the private key substituted
     TEMP_SECRET=$(mktemp)
     
@@ -96,10 +96,10 @@ if [ -f "/var/home/dylan/.oci/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builde
         # Skip the placeholder lines
         getline; getline; getline
         # Insert the actual private key
-        while ((getline line < "/var/home/dylan/.oci/oci_api_key.pem") > 0) {
+        while ((getline line < "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem") > 0) {
             print "    " line
         }
-        close("/var/home/dylan/.oci/oci_api_key.pem")
+        close("/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem")
         next
     }
     { print }
