@@ -47,50 +47,40 @@ else
     kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
 fi
 
-# Check if nginx ingress controller is already installed
+# Install Gateway API CRDs
 echo ""
-if kubectl get namespace ingress-nginx &>/dev/null && kubectl get deployment ingress-nginx-controller -n ingress-nginx &>/dev/null; then
-    echo "nginx ingress controller is already installed, skipping installation..."
-else
-    echo "Installing nginx ingress controller..."
+echo "Installing Gateway API CRDs..."
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
 
-    # Get NLB IP address from DNS
-    NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-    if [ -z "$NLB_IP" ]; then
-        echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
-        exit 1
-    fi
+# Install Envoy Gateway
+echo ""
+echo "Installing Envoy Gateway..."
+helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.2.4 -n envoy-gateway-system --create-namespace
 
-    export NLB_IP
+# Wait for Envoy Gateway to be ready
+echo "Waiting for Envoy Gateway to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
 
-    # Download, patch, and apply the manifest for the nginx ingress controller
-    # We do this all in memory to avoid creating an ALB by default before it is patched, which is not desired.
-    curl -sSL https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml | \
-    yq eval '(select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."oci.oraclecloud.com/load-balancer-type") = "lb" |
-    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape") = "flexible" | 
-    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape-flex-min") = "10" | 
-    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape-flex-max") = "10" | 
-    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .metadata.annotations."service.beta.kubernetes.io/oci-load-balancer-shape-internal") = "false" | 
-    (select(.kind == "Service" and .metadata.name == "ingress-nginx-controller") | .spec.loadBalancerIP) = env(NLB_IP)' - | \
-    kubectl apply -f -
-
-    # Wait for nginx ingress controller to be ready
-    echo "Waiting for nginx ingress controller to be ready..."
-    kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
-
-    # Scale nginx ingress controller to 4 replicas for high availability
-    echo "Scaling nginx ingress controller to 4 replicas..."
-    kubectl scale deployment ingress-nginx-controller -n ingress-nginx --replicas=4
-fi
-
-# Apply base resources using kustomize
+# Apply base resources
 echo ""
 echo "Applying base resources..."
 kubectl apply -k k8s/base/
 
 echo ""
-echo "Deploying monitoring stack (Prometheus)..."
-kubectl kustomize k8s/monitoring/ --enable-helm | kubectl apply --server-side=true -f -
+echo "Deploying apps..."
+kubectl apply -k k8s/apps/
+
+# Get NLB IP address from DNS and update EnvoyProxy configuration
+echo ""
+echo "Setting static IP for load balancer..."
+NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+if [ -z "$NLB_IP" ]; then
+    echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
+    exit 1
+fi
+
+# Update EnvoyProxy with dynamic IP
+kubectl patch envoyproxy oci-loadbalancer -n dylanmtaylor --type='merge' -p="{\"spec\":{\"provider\":{\"kubernetes\":{\"envoyService\":{\"loadBalancerIP\":\"$NLB_IP\"}}}}}"
 
 # Apply OCI credentials secret for resume-builder
 echo ""

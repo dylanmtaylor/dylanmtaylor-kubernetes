@@ -1,0 +1,167 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: oci-loadbalancer
+    namespace: dylanmtaylor
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: dylanmtaylor-gateway
+  namespace: dylanmtaylor
+  annotations:
+    oci.oraclecloud.com/load-balancer-type: "lb"
+    service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: dylanmtaylor-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  hostnames:
+  - "www.dylanmtaylor.com"
+  - "dylanmtaylor.com"
+  - "www.dylanmtaylor.local"
+  - "dylanmtaylor.local"
+  - "localhost"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: www-dylanmtaylor-com
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: apps-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  hostnames:
+  - "apps.dylanmtaylor.com"
+  - "apps.dylanmtaylor.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: apps-dylanmtaylor-com
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: fwc-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  hostnames:
+  - "fwc.dylanmtaylor.com"
+  - "fwc.dylanmtaylor.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: fwc-dylanmtaylor-com
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: files-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  hostnames:
+  - "files.dylanmtaylor.com"
+  - "files.dylanmtaylor.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: files-dylanmtaylor-com
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: git-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  hostnames:
+  - "git.dylanmtaylor.com"
+  - "git.dylanmtaylor.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: git-dylanmtaylor-com
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: blog-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  hostnames:
+  - "blog.dylanmtaylor.com"
+  - "blog.dylanmtaylor.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: blog-dylanmtaylor-com
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: catch-all-route
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+  - name: dylanmtaylor-gateway
+  rules:
+  - backendRefs:
+    - name: www-dylanmtaylor-com
+      port: 80

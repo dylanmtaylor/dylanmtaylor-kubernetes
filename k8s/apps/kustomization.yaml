@@ -33,5 +33,6 @@ resources:
   - resume-builder/serviceaccount.yaml
   - resume-builder/cronjob.yaml
 
-  # Nginx Ingress using OCI NLB
-  - ingress.yaml
+  # Gateway API configuration
+  - gateway.yaml
+  - envoyproxy.yaml
