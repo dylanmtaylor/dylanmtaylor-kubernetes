@@ -19,6 +19,11 @@ if ! command -v yq &>/dev/null; then
   fi
 fi
 
+# Install Gateway API CRDs first (needed by cert-manager)
+echo ""
+echo "Installing Gateway API CRDs..."
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+
 # Check if cert-manager is already installed
 echo ""
 if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
@@ -56,11 +61,6 @@ else
     echo "Waiting for OCI Native Ingress Controller to be ready..."
     kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
 fi
-
-# Install Gateway API CRDs
-echo ""
-echo "Installing Gateway API CRDs..."
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 
 # Install Envoy Gateway
 echo ""
