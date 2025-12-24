@@ -35,4 +35,3 @@ resources:
 
   # Gateway API configuration
   - gateway.yaml
-  - envoyproxy.yaml

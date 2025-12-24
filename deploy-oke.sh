@@ -25,7 +25,7 @@ if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert
     echo "cert-manager is already installed, skipping installation..."
 else
     echo "Installing cert-manager..."
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
 
     # Wait for cert-manager to be ready
     echo "Waiting for cert-manager to be ready..."
@@ -50,16 +50,27 @@ fi
 # Install Gateway API CRDs
 echo ""
 echo "Installing Gateway API CRDs..."
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 
-# Install Envoy Gateway
+# Install Istio with ambient mode
 echo ""
-echo "Installing Envoy Gateway..."
-helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.2.4 -n envoy-gateway-system --create-namespace
+echo "Installing Istio..."
+if ! command -v istioctl &>/dev/null; then
+  echo "Downloading istioctl..."
+  ISTIO_VERSION=1.28.2
+  curl -sL https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION sh -
+  export PATH="$PWD/istio-$ISTIO_VERSION/bin:$PATH"
+fi
 
-# Wait for Envoy Gateway to be ready
-echo "Waiting for Envoy Gateway to be ready..."
-kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
+if kubectl get namespace istio-system &>/dev/null; then
+    echo "Istio is already installed, skipping installation..."
+else
+    istioctl install --set profile=ambient -y
+fi
+
+# Wait for Istio to be ready
+echo "Waiting for Istio to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/istiod -n istio-system
 
 # Apply base resources
 echo ""
@@ -69,18 +80,6 @@ kubectl apply -k k8s/base/
 echo ""
 echo "Deploying apps..."
 kubectl apply -k k8s/apps/
-
-# Get NLB IP address from DNS and update EnvoyProxy configuration
-echo ""
-echo "Setting static IP for load balancer..."
-NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-if [ -z "$NLB_IP" ]; then
-    echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
-    exit 1
-fi
-
-# Update EnvoyProxy with dynamic IP
-kubectl patch envoyproxy oci-loadbalancer -n dylanmtaylor --type='merge' -p="{\"spec\":{\"provider\":{\"kubernetes\":{\"envoyService\":{\"loadBalancerIP\":\"$NLB_IP\"}}}}}"
 
 # Apply OCI credentials secret for resume-builder
 echo ""
@@ -122,4 +121,4 @@ echo "Deployment complete!"
 echo ""
 echo "Check status with:"
 echo "  kubectl get all -n dylanmtaylor"
-echo "  kubectl get ingress -n dylanmtaylor"
+echo "  kubectl get gateway -n dylanmtaylor"

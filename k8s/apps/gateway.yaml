@@ -1,14 +1,9 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: GatewayClass
 metadata:
-  name: eg
+  name: istio
 spec:
-  controllerName: gateway.envoyproxy.io/gatewayclass-controller
-  parametersRef:
-    group: gateway.envoyproxy.io
-    kind: EnvoyProxy
-    name: oci-loadbalancer
-    namespace: dylanmtaylor
+  controllerName: istio.io/gateway-controller
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -16,12 +11,12 @@ metadata:
   name: dylanmtaylor-gateway
   namespace: dylanmtaylor
   annotations:
-    oci.oraclecloud.com/load-balancer-type: "lb"
+    service.beta.kubernetes.io/load-balancer-ip: "129.80.142.204"
     service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "10"
 spec:
-  gatewayClassName: eg
+  gatewayClassName: istio
   listeners:
   - name: http
     port: 80
