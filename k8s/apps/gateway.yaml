@@ -16,6 +16,8 @@ metadata:
   name: dylanmtaylor-gateway
   namespace: dylanmtaylor
   annotations:
+    cert-manager.io/cluster-issuer: selfsigned
+    cert-manager.io/common-name: "dylanmtaylor.com"
     oci.oraclecloud.com/load-balancer-type: "lb"
     service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
     service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
@@ -26,6 +28,18 @@ spec:
   - name: http
     port: 80
     protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: "*.dylanmtaylor.com"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: dylanmtaylor-tls
     allowedRoutes:
       namespaces:
         from: Same
