@@ -1,0 +1,21 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: compression-policy
+  namespace: dylanmtaylor
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: dylanmtaylor-routes
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: apps-routes
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: files-routes
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: fwc-routes
+  compression:
+  - type: Gzip
