@@ -4,56 +4,68 @@ set -e
 echo "======================================"
 echo "Deploying Dylan Taylor Kubernetes Apps"
 echo "======================================"
+# yq is a pre-requisite
+if ! command -v yq &>/dev/null; then
+  ARCH=$(case "$(uname -m)" in x86_64) echo amd64;; aarch64|arm64) echo arm64;; esac)
+  if [ -n "$ARCH" ]; then
+    mkdir -p ./bin
+    wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$ARCH -O bin/yq
+    chmod +x ./bin/yq
+    export PATH="$(pwd)/bin:$PATH"
+  fi
+fi
 
+# Install Gateway API CRDs first (needed by cert-manager)
+echo ""
+echo "Installing Gateway API CRDs..."
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 # Check if cert-manager is already installed
 echo ""
 if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
-    echo "cert-manager is already installed, skipping installation..."
+    echo "cert-manager is already installed, checking Gateway API support..."
+    if ! kubectl get deployment cert-manager -n cert-manager -o yaml | grep -q "enable-gateway-api"; then
+        echo "Enabling Gateway API support in cert-manager..."
+        kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+        kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
+    fi
 else
     echo "Installing cert-manager..."
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
 
     # Wait for cert-manager to be ready
     echo "Waiting for cert-manager to be ready..."
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+    
+    # Enable Gateway API support
+    echo "Enabling Gateway API support..."
+    kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+    kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
 fi
 
-# Check if nginx ingress controller is already installed
+# Install Envoy Gateway
 echo ""
-if kubectl get namespace ingress-nginx &>/dev/null && kubectl get deployment ingress-nginx-controller -n ingress-nginx &>/dev/null; then
-    echo "nginx ingress controller is already installed, skipping installation..."
-else
-    echo "Installing nginx ingress controller..."
+echo "Installing Envoy Gateway..."
+helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace
 
-    # Download, patch, and apply the manifest for the nginx ingress controller
-    # We do this all in memory to avoid creating an ALB by default before it is patched, which is not desired.
-    curl -sSL https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.9.4/deploy/static/provider/cloud/deploy.yaml | \
-    kubectl apply -f -
+# Wait for Envoy Gateway to be ready
+echo "Waiting for Envoy Gateway to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
 
-    # Wait for nginx ingress controller to be ready
-    echo "Waiting for nginx ingress controller to be ready..."
-    kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
-
-    # Scale nginx ingress controller to 4 replicas for high availability
-    echo "Scaling nginx ingress controller to 4 replicas..."
-    kubectl scale deployment ingress-nginx-controller -n ingress-nginx --replicas=2
-fi
-
-# Apply base resources using kustomize
+# Apply base resources
 echo ""
 echo "Applying base resources..."
 kubectl apply -k k8s/base/
 
 echo ""
-echo "Deploying monitoring stack (Prometheus)..."
-kubectl kustomize k8s/monitoring/ --enable-helm | kubectl apply --server-side=true -f -
+echo "Deploying apps..."
+kubectl apply -k k8s/apps/
 
 # Apply OCI credentials secret for resume-builder
 echo ""
 echo "Applying OCI credentials secret..."
-if [ -f "/var/home/dylan/.oci/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
+if [ -f "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
     # Create a temporary file with the private key substituted
     TEMP_SECRET=$(mktemp)
     
@@ -64,10 +76,10 @@ if [ -f "/var/home/dylan/.oci/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builde
         # Skip the placeholder lines
         getline; getline; getline
         # Insert the actual private key
-        while ((getline line < "/var/home/dylan/.oci/oci_api_key.pem") > 0) {
+        while ((getline line < "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem") > 0) {
             print "    " line
         }
-        close("/var/home/dylan/.oci/oci_api_key.pem")
+        close("/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem")
         next
     }
     { print }
