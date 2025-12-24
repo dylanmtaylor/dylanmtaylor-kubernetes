@@ -89,6 +89,18 @@ fi
 echo "Waiting for Envoy Gateway to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
 
+# Install metrics-server
+echo ""
+echo "Installing metrics-server..."
+if kubectl get deployment metrics-server -n kube-system &>/dev/null; then
+    echo "metrics-server is already installed, skipping installation..."
+else
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+    # Wait for metrics-server to be ready
+    echo "Waiting for metrics-server to be ready..."
+    kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server -n kube-system
+fi
+
 # Apply base resources
 echo ""
 echo "Applying base resources..."
