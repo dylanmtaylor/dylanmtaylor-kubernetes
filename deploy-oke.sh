@@ -22,7 +22,12 @@ fi
 # Check if cert-manager is already installed
 echo ""
 if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
-    echo "cert-manager is already installed, skipping installation..."
+    echo "cert-manager is already installed, checking Gateway API support..."
+    if ! kubectl get deployment cert-manager -n cert-manager -o yaml | grep -q "enable-gateway-api"; then
+        echo "Enabling Gateway API support in cert-manager..."
+        kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+        kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
+    fi
 else
     echo "Installing cert-manager..."
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
@@ -32,6 +37,11 @@ else
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager
     kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
+    
+    # Enable Gateway API support
+    echo "Enabling Gateway API support..."
+    kubectl patch deployment cert-manager -n cert-manager --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-gateway-api"}]'
+    kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
 fi
 
 # Install OCI Native Ingress Controller
