@@ -13,10 +13,6 @@ resources:
   - apps-dylanmtaylor-com/deployment.yaml
   - apps-dylanmtaylor-com/service.yaml
 
-  - blog-dylanmtaylor-com/configmap.yaml
-  - blog-dylanmtaylor-com/deployment.yaml
-  - blog-dylanmtaylor-com/service.yaml
-
   - files-dylanmtaylor-com/configmap.yaml
   - files-dylanmtaylor-com/deployment.yaml
   - files-dylanmtaylor-com/service.yaml
@@ -24,10 +20,6 @@ resources:
   - fwc-dylanmtaylor-com/configmap.yaml
   - fwc-dylanmtaylor-com/deployment.yaml
   - fwc-dylanmtaylor-com/service.yaml
-
-  - git-dylanmtaylor-com/configmap.yaml
-  - git-dylanmtaylor-com/deployment.yaml
-  - git-dylanmtaylor-com/service.yaml
 
   # Resume Builder (CronJob)
   - resume-builder/serviceaccount.yaml

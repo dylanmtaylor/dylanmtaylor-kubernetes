@@ -151,13 +151,15 @@ spec:
   - "git.dylanmtaylor.com"
   - "git.dylanmtaylor.local"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: "/"
-    backendRefs:
-    - name: git-dylanmtaylor-com
-      port: 80
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        hostname: gitlab.com
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /dylanmtaylor
+        statusCode: 301
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -171,13 +173,15 @@ spec:
   - "blog.dylanmtaylor.com"
   - "blog.dylanmtaylor.local"
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: "/"
-    backendRefs:
-    - name: blog-dylanmtaylor-com
-      port: 80
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        hostname: dylanmtaylor.com
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /blog
+        statusCode: 301
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
