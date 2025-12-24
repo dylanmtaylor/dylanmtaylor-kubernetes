@@ -25,7 +25,7 @@ if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert
     echo "cert-manager is already installed, skipping installation..."
 else
     echo "Installing cert-manager..."
-    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.2/cert-manager.yaml
 
     # Wait for cert-manager to be ready
     echo "Waiting for cert-manager to be ready..."
@@ -50,12 +50,12 @@ fi
 # Install Gateway API CRDs
 echo ""
 echo "Installing Gateway API CRDs..."
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 
 # Install Envoy Gateway
 echo ""
 echo "Installing Envoy Gateway..."
-helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.2.4 -n envoy-gateway-system --create-namespace
+helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace
 
 # Wait for Envoy Gateway to be ready
 echo "Waiting for Envoy Gateway to be ready..."
