@@ -28,6 +28,7 @@ resources:
   # Gateway API configuration
   - gateway.yaml
   - redirects.yaml
+  - certificates.yaml
   - envoyproxy.yaml
   - compression-policy.yaml
   - real-ip-policy.yaml

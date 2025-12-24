@@ -1,0 +1,31 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dylanmtaylor-com-tls
+  namespace: dylanmtaylor
+spec:
+  secretName: dylanmtaylor-com-tls
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+    group: cert-manager.io
+  commonName: dylanmtaylor.com
+  dnsNames:
+    - "*.dylanmtaylor.com"
+    - "dylanmtaylor.com"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dylanmtaylor-local-tls
+  namespace: dylanmtaylor
+spec:
+  secretName: dylanmtaylor-local-tls
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+    group: cert-manager.io
+  commonName: dylanmtaylor.local
+  dnsNames:
+    - "*.dylanmtaylor.local"
+    - "dylanmtaylor.local"

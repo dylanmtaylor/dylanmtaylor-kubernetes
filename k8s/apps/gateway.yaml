@@ -39,7 +39,7 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: dylanmtaylor-tls
+            name: dylanmtaylor-com-tls
       allowedRoutes:
         namespaces:
           from: Same
@@ -51,7 +51,7 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: dylanmtaylor-tls
+            name: dylanmtaylor-com-tls
       allowedRoutes:
         namespaces:
           from: Same
@@ -63,7 +63,7 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: dylanmtaylor-tls
+            name: dylanmtaylor-local-tls
       allowedRoutes:
         namespaces:
           from: Same
@@ -75,7 +75,7 @@ spec:
         mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: dylanmtaylor-tls
+            name: dylanmtaylor-local-tls
       allowedRoutes:
         namespaces:
           from: Same
