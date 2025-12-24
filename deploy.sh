@@ -4,6 +4,21 @@ set -e
 echo "======================================"
 echo "Deploying Dylan Taylor Kubernetes Apps"
 echo "======================================"
+
+# Detect if we're running on OKE
+IS_OKE=false
+if kubectl get nodes -o jsonpath='{.items[0].spec.providerID}' 2>/dev/null | grep -q "ocid1.instance"; then
+    IS_OKE=true
+    echo "Detected Oracle Kubernetes Engine (OKE) cluster"
+else
+    echo "Detected non-OKE cluster"
+fi
+
+# Setup OKE-specific service account
+if [ "$IS_OKE" = true ]; then
+    kubectl apply -f k8s/base/oke-admin-service-account.yaml
+fi
+
 # yq is a pre-requisite
 if ! command -v yq &>/dev/null; then
   ARCH=$(case "$(uname -m)" in x86_64) echo amd64;; aarch64|arm64) echo arm64;; esac)
@@ -19,6 +34,7 @@ fi
 echo ""
 echo "Installing Gateway API CRDs..."
 kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+
 # Check if cert-manager is already installed
 echo ""
 if kubectl get namespace cert-manager &>/dev/null && kubectl get deployment cert-manager -n cert-manager &>/dev/null; then
@@ -44,10 +60,30 @@ else
     kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
 fi
 
+# Install OCI Native Ingress Controller (OKE only)
+if [ "$IS_OKE" = true ]; then
+    echo ""
+    echo "Checking if OCI Native Ingress Controller is already installed..."
+    if kubectl get deployment release-name-oci-native-ingress-controller -n native-ingress-controller-system 2>/dev/null | grep -q release-name-oci-native-ingress-controller; then
+        echo "OCI Native Ingress Controller is already installed, skipping installation..."
+    else
+        echo "Installing OCI Native Ingress Controller..."
+        kubectl apply -f k8s/base/oci-native-ingress-controller.yaml
+        # Wait for OCI Native Ingress Controller to be ready
+        echo "Waiting for OCI Native Ingress Controller to be ready..."
+        kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
+    fi
+fi
+
 # Install Envoy Gateway
 echo ""
-echo "Installing Envoy Gateway..."
-helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace
+if helm list -n envoy-gateway-system | grep -q "^eg\s"; then
+    echo "Envoy Gateway is already installed, upgrading..."
+    helm upgrade eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system
+else
+    echo "Installing Envoy Gateway..."
+    helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace
+fi
 
 # Wait for Envoy Gateway to be ready
 echo "Waiting for Envoy Gateway to be ready..."
@@ -66,40 +102,63 @@ echo ""
 echo "Deploying apps..."
 kubectl apply -k k8s/apps/
 
+# OKE-specific: Set static IP for load balancer
+if [ "$IS_OKE" = true ]; then
+    echo ""
+    echo "Setting static IP for load balancer..."
+    NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+    if [ -z "$NLB_IP" ]; then
+        echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
+        exit 1
+    fi
+
+    # Update EnvoyProxy with dynamic IP (only if it exists)
+    if kubectl get envoyproxy oci-loadbalancer -n dylanmtaylor &>/dev/null; then
+        CURRENT_IP=$(kubectl get envoyproxy oci-loadbalancer -n dylanmtaylor -o jsonpath='{.spec.provider.kubernetes.envoyService.loadBalancerIP}' 2>/dev/null || echo "")
+        if [ "$CURRENT_IP" != "$NLB_IP" ]; then
+            echo "Updating EnvoyProxy loadBalancerIP from '$CURRENT_IP' to '$NLB_IP'..."
+            kubectl patch envoyproxy oci-loadbalancer -n dylanmtaylor --type='merge' -p="{\"spec\":{\"provider\":{\"kubernetes\":{\"envoyService\":{\"loadBalancerIP\":\"$NLB_IP\"}}}}}"
+        else
+            echo "EnvoyProxy loadBalancerIP is already set to $NLB_IP, skipping..."
+        fi
+    else
+        echo "EnvoyProxy oci-loadbalancer not found, will be created by app deployment..."
+    fi
+fi
+
 # Apply OCI credentials secret for resume-builder
 echo ""
 echo "Applying OCI credentials secret..."
 if [ -f "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
-    # Create a temporary file with the private key substituted
-    TEMP_SECRET=$(mktemp)
-    
-    # Read the secret file and replace the placeholder section
-    awk '
-    /oci_api_key\.pem: \|/ {
-        print $0
-        # Skip the placeholder lines
-        getline; getline; getline
-        # Insert the actual private key
-        while ((getline line < "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem") > 0) {
-            print "    " line
+    if ! kubectl get secret oci-credentials -n dylanmtaylor &>/dev/null; then
+        # Create a temporary file with the private key substituted
+        TEMP_SECRET=$(mktemp)
+        
+        # Read the secret file and replace the placeholder section
+        awk '
+        /oci_api_key\.pem: \|/ {
+            print $0
+            # Skip the placeholder lines
+            getline; getline; getline
+            # Insert the actual private key
+            while ((getline line < "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem") > 0) {
+                print "    " line
+            }
+            close("/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem")
+            next
         }
-        close("/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem")
-        next
-    }
-    { print }
-    ' k8s/apps/resume-builder/secret.yaml > "$TEMP_SECRET"
-    
-    # Apply the secret and clean up
-    kubectl apply -f "$TEMP_SECRET"
-    rm -f "$TEMP_SECRET"
+        { print }
+        ' k8s/apps/resume-builder/secret.yaml > "$TEMP_SECRET"
+        
+        # Apply the secret and clean up
+        kubectl apply -f "$TEMP_SECRET"
+        rm -f "$TEMP_SECRET"
+    else
+        echo "OCI credentials secret already exists, skipping..."
+    fi
 else
     echo "Warning: OCI API key or secret template not found, skipping OCI credentials secret..."
 fi
-
-# Apply all apps using kustomize
-echo ""
-echo "Deploying all services..."
-kubectl apply -k k8s/apps/
 
 echo ""
 echo "Deployment complete!"
