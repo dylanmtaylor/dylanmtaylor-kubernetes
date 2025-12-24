@@ -48,19 +48,37 @@ spec:
               set -e
 
               # Install required packages
-              apk add --no-cache curl unzip rsync
+              apk add --no-cache curl unzip rsync jq
+
+              ARTIFACT_URL="https://gitlab.com/dylanmtaylor/dylanmtaylor.gitlab.io/-/jobs/artifacts/master/download?job=pages"
+              LAST_COMMIT_FILE="/tmp/last_commit"
 
               # Function to update content
               update_content() {
-                echo "$(date): Updating website content..."
+                echo "$(date): Checking for updates..."
+                
+                # Get latest commit SHA from GitLab API
+                LATEST_COMMIT=$(curl -s "https://gitlab.com/api/v4/projects/dylanmtaylor%2Fdylanmtaylor.gitlab.io/repository/commits/master" | jq -r '.id' 2>/dev/null || echo "")
+                CURRENT_COMMIT=$(cat "$LAST_COMMIT_FILE" 2>/dev/null || echo "")
+                
+                # Check if content changed
+                if [ "$CURRENT_COMMIT" = "$LATEST_COMMIT" ] && [ -n "$LATEST_COMMIT" ]; then
+                  echo "$(date): No changes detected (commit: ${LATEST_COMMIT:0:8}), skipping update"
+                  return
+                fi
+                
+                echo "$(date): New commit detected (${LATEST_COMMIT:0:8}), updating content..."
                 
                 # Download and extract the site
-                curl -Lo /tmp/site.zip https://gitlab.com/dylanmtaylor/dylanmtaylor.gitlab.io/-/jobs/artifacts/master/download?job=pages
+                curl -Lo /tmp/site.zip "$ARTIFACT_URL"
                 rm -rf /tmp/site
-                unzip -o /tmp/site.zip -d /tmp/site
+                unzip -q /tmp/site.zip -d /tmp/site
                 
                 # Sync to shared volume
-                rsync -rvh /tmp/site/public/ /var/www/html/ --delete
+                rsync -rh /tmp/site/public/ /var/www/html/ --delete
+                
+                # Save new commit SHA
+                echo "$LATEST_COMMIT" > "$LAST_COMMIT_FILE"
                 
                 echo "$(date): Content updated successfully"
               }
@@ -68,7 +86,7 @@ spec:
               # Initial update
               update_content
 
-              # Update every 5 minutes
+              # Check every 5 minutes
               while true; do
                 sleep 300
                 update_content
