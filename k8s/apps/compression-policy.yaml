@@ -19,3 +19,7 @@ spec:
     name: fwc-routes
   compression:
   - type: Gzip
+  timeout:
+    http:
+      requestTimeout: 30s
+      connectionIdleTimeout: 5m
