@@ -91,15 +91,16 @@ kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -
 
 # Install metrics-server
 echo ""
-echo "Installing metrics-server..."
+echo "Installing metrics-server in HA mode..."
 if kubectl get deployment metrics-server -n kube-system &>/dev/null; then
-    echo "metrics-server is already installed, skipping installation..."
+    echo "metrics-server is already installed, upgrading..."
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml
 else
-    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-    # Wait for metrics-server to be ready
-    echo "Waiting for metrics-server to be ready..."
-    kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server -n kube-system
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml
 fi
+# Wait for metrics-server to be ready
+echo "Waiting for metrics-server to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server -n kube-system
 
 # Apply base resources
 echo ""
