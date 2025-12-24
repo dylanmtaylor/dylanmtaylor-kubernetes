@@ -25,78 +25,60 @@ metadata:
 spec:
   gatewayClassName: eg
   listeners:
-  - name: http
-    port: 80
-    protocol: HTTP
-    allowedRoutes:
-      namespaces:
-        from: Same
-  - name: https
-    port: 443
-    protocol: HTTPS
-    hostname: "*.dylanmtaylor.com"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: dylanmtaylor-tls
-    allowedRoutes:
-      namespaces:
-        from: Same
-  - name: https-apex
-    port: 443
-    protocol: HTTPS
-    hostname: "dylanmtaylor.com"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: dylanmtaylor-tls
-    allowedRoutes:
-      namespaces:
-        from: Same
-  - name: https-local
-    port: 443
-    protocol: HTTPS
-    hostname: "*.dylanmtaylor.local"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: dylanmtaylor-tls
-    allowedRoutes:
-      namespaces:
-        from: Same
-  - name: https-local-apex
-    port: 443
-    protocol: HTTPS
-    hostname: "dylanmtaylor.local"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: dylanmtaylor-tls
-    allowedRoutes:
-      namespaces:
-        from: Same
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: http-to-https-redirect
-  namespace: dylanmtaylor
-spec:
-  parentRefs:
-  - name: dylanmtaylor-gateway
-    sectionName: http
-  hostnames:
-  - "*.dylanmtaylor.com"
-  rules:
-  - filters:
-    - type: RequestRedirect
-      requestRedirect:
-        scheme: https
-        statusCode: 301
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      port: 443
+      protocol: HTTPS
+      hostname: "*.dylanmtaylor.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: dylanmtaylor-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https-apex
+      port: 443
+      protocol: HTTPS
+      hostname: "dylanmtaylor.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: dylanmtaylor-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https-local
+      port: 443
+      protocol: HTTPS
+      hostname: "*.dylanmtaylor.local"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: dylanmtaylor-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https-local-apex
+      port: 443
+      protocol: HTTPS
+      hostname: "dylanmtaylor.local"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: dylanmtaylor-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -105,47 +87,47 @@ metadata:
   namespace: dylanmtaylor
 spec:
   parentRefs:
-  - name: dylanmtaylor-gateway
-    sectionName: https
-  - name: dylanmtaylor-gateway
-    sectionName: https-apex
-  - name: dylanmtaylor-gateway
-    sectionName: https-local
-  - name: dylanmtaylor-gateway
-    sectionName: https-local-apex
+    - name: dylanmtaylor-gateway
+      sectionName: https
+    - name: dylanmtaylor-gateway
+      sectionName: https-apex
+    - name: dylanmtaylor-gateway
+      sectionName: https-local
+    - name: dylanmtaylor-gateway
+      sectionName: https-local-apex
   hostnames:
-  - "www.dylanmtaylor.com"
-  - "dylanmtaylor.com"
-  - "www.dylanmtaylor.local"
-  - "dylanmtaylor.local"
-  - "localhost"
+    - "www.dylanmtaylor.com"
+    - "dylanmtaylor.com"
+    - "www.dylanmtaylor.local"
+    - "dylanmtaylor.local"
+    - "localhost"
   rules:
-  - filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        set:
-        - name: Strict-Transport-Security
-          value: max-age=31536000; includeSubDomains; preload
-        - name: X-Frame-Options
-          value: DENY
-        - name: X-Content-Type-Options
-          value: nosniff
-        - name: Referrer-Policy
-          value: strict-origin-when-cross-origin
-        - name: X-XSS-Protection
-          value: "1; mode=block"
-        - name: Permissions-Policy
-          value: geolocation=(), microphone=(), camera=()
-        remove:
-        - Server
-        - X-Powered-By
-    matches:
-    - path:
-        type: PathPrefix
-        value: "/"
-    backendRefs:
-    - name: www-dylanmtaylor-com
-      port: 80
+    - filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains; preload
+              - name: X-Frame-Options
+                value: DENY
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: Referrer-Policy
+                value: strict-origin-when-cross-origin
+              - name: X-XSS-Protection
+                value: "1; mode=block"
+              - name: Permissions-Policy
+                value: geolocation=(), microphone=(), camera=()
+            remove:
+              - Server
+              - X-Powered-By
+      matches:
+        - path:
+            type: PathPrefix
+            value: "/"
+      backendRefs:
+        - name: www-dylanmtaylor-com
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -154,40 +136,40 @@ metadata:
   namespace: dylanmtaylor
 spec:
   parentRefs:
-  - name: dylanmtaylor-gateway
-    sectionName: https
-  - name: dylanmtaylor-gateway
-    sectionName: https-local
+    - name: dylanmtaylor-gateway
+      sectionName: https
+    - name: dylanmtaylor-gateway
+      sectionName: https-local
   hostnames:
-  - "apps.dylanmtaylor.com"
-  - "apps.dylanmtaylor.local"
+    - "apps.dylanmtaylor.com"
+    - "apps.dylanmtaylor.local"
   rules:
-  - filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        set:
-        - name: Strict-Transport-Security
-          value: max-age=31536000; includeSubDomains; preload
-        - name: X-Frame-Options
-          value: DENY
-        - name: X-Content-Type-Options
-          value: nosniff
-        - name: Referrer-Policy
-          value: strict-origin-when-cross-origin
-        - name: X-XSS-Protection
-          value: "1; mode=block"
-        - name: Permissions-Policy
-          value: geolocation=(), microphone=(), camera=()
-        remove:
-        - Server
-        - X-Powered-By
-    matches:
-    - path:
-        type: PathPrefix
-        value: "/"
-    backendRefs:
-    - name: apps-dylanmtaylor-com
-      port: 80
+    - filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains; preload
+              - name: X-Frame-Options
+                value: DENY
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: Referrer-Policy
+                value: strict-origin-when-cross-origin
+              - name: X-XSS-Protection
+                value: "1; mode=block"
+              - name: Permissions-Policy
+                value: geolocation=(), microphone=(), camera=()
+            remove:
+              - Server
+              - X-Powered-By
+      matches:
+        - path:
+            type: PathPrefix
+            value: "/"
+      backendRefs:
+        - name: apps-dylanmtaylor-com
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -196,40 +178,40 @@ metadata:
   namespace: dylanmtaylor
 spec:
   parentRefs:
-  - name: dylanmtaylor-gateway
-    sectionName: https
-  - name: dylanmtaylor-gateway
-    sectionName: https-local
+    - name: dylanmtaylor-gateway
+      sectionName: https
+    - name: dylanmtaylor-gateway
+      sectionName: https-local
   hostnames:
-  - "fwc.dylanmtaylor.com"
-  - "fwc.dylanmtaylor.local"
+    - "fwc.dylanmtaylor.com"
+    - "fwc.dylanmtaylor.local"
   rules:
-  - filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        set:
-        - name: Strict-Transport-Security
-          value: max-age=31536000; includeSubDomains; preload
-        - name: X-Frame-Options
-          value: DENY
-        - name: X-Content-Type-Options
-          value: nosniff
-        - name: Referrer-Policy
-          value: strict-origin-when-cross-origin
-        - name: X-XSS-Protection
-          value: "1; mode=block"
-        - name: Permissions-Policy
-          value: geolocation=(), microphone=(), camera=()
-        remove:
-        - Server
-        - X-Powered-By
-    matches:
-    - path:
-        type: PathPrefix
-        value: "/"
-    backendRefs:
-    - name: fwc-dylanmtaylor-com
-      port: 80
+    - filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains; preload
+              - name: X-Frame-Options
+                value: DENY
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: Referrer-Policy
+                value: strict-origin-when-cross-origin
+              - name: X-XSS-Protection
+                value: "1; mode=block"
+              - name: Permissions-Policy
+                value: geolocation=(), microphone=(), camera=()
+            remove:
+              - Server
+              - X-Powered-By
+      matches:
+        - path:
+            type: PathPrefix
+            value: "/"
+      backendRefs:
+        - name: fwc-dylanmtaylor-com
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -238,84 +220,40 @@ metadata:
   namespace: dylanmtaylor
 spec:
   parentRefs:
-  - name: dylanmtaylor-gateway
-    sectionName: https
-  - name: dylanmtaylor-gateway
-    sectionName: https-local
+    - name: dylanmtaylor-gateway
+      sectionName: https
+    - name: dylanmtaylor-gateway
+      sectionName: https-local
   hostnames:
-  - "files.dylanmtaylor.com"
-  - "files.dylanmtaylor.local"
+    - "files.dylanmtaylor.com"
+    - "files.dylanmtaylor.local"
   rules:
-  - filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        set:
-        - name: Strict-Transport-Security
-          value: max-age=31536000; includeSubDomains; preload
-        - name: X-Frame-Options
-          value: DENY
-        - name: X-Content-Type-Options
-          value: nosniff
-        - name: Referrer-Policy
-          value: strict-origin-when-cross-origin
-        - name: X-XSS-Protection
-          value: "1; mode=block"
-        - name: Permissions-Policy
-          value: geolocation=(), microphone=(), camera=()
-        remove:
-        - Server
-        - X-Powered-By
-    matches:
-    - path:
-        type: PathPrefix
-        value: "/"
-    backendRefs:
-    - name: files-dylanmtaylor-com
-      port: 80
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: git-routes
-  namespace: dylanmtaylor
-spec:
-  parentRefs:
-  - name: dylanmtaylor-gateway
-  hostnames:
-  - "git.dylanmtaylor.com"
-  - "git.dylanmtaylor.local"
-  rules:
-  - filters:
-    - type: RequestRedirect
-      requestRedirect:
-        scheme: https
-        hostname: gitlab.com
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /dylanmtaylor
-        statusCode: 301
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: blog-routes
-  namespace: dylanmtaylor
-spec:
-  parentRefs:
-  - name: dylanmtaylor-gateway
-  hostnames:
-  - "blog.dylanmtaylor.com"
-  - "blog.dylanmtaylor.local"
-  rules:
-  - filters:
-    - type: RequestRedirect
-      requestRedirect:
-        scheme: https
-        hostname: dylanmtaylor.com
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /blog
-        statusCode: 301
+    - filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            set:
+              - name: Strict-Transport-Security
+                value: max-age=31536000; includeSubDomains; preload
+              - name: X-Frame-Options
+                value: DENY
+              - name: X-Content-Type-Options
+                value: nosniff
+              - name: Referrer-Policy
+                value: strict-origin-when-cross-origin
+              - name: X-XSS-Protection
+                value: "1; mode=block"
+              - name: Permissions-Policy
+                value: geolocation=(), microphone=(), camera=()
+            remove:
+              - Server
+              - X-Powered-By
+      matches:
+        - path:
+            type: PathPrefix
+            value: "/"
+      backendRefs:
+        - name: files-dylanmtaylor-com
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -324,8 +262,8 @@ metadata:
   namespace: dylanmtaylor
 spec:
   parentRefs:
-  - name: dylanmtaylor-gateway
+    - name: dylanmtaylor-gateway
   rules:
-  - backendRefs:
-    - name: www-dylanmtaylor-com
-      port: 80
+    - backendRefs:
+        - name: www-dylanmtaylor-com
+          port: 80

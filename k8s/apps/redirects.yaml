@@ -1,0 +1,61 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-to-https-redirect
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+    - name: dylanmtaylor-gateway
+      sectionName: http
+  hostnames:
+    - "*.dylanmtaylor.com"
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: git-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+    - name: dylanmtaylor-gateway
+  hostnames:
+    - "git.dylanmtaylor.com"
+    - "git.dylanmtaylor.local"
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: gitlab.com
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /dylanmtaylor
+            statusCode: 301
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: blog-routes
+  namespace: dylanmtaylor
+spec:
+  parentRefs:
+    - name: dylanmtaylor-gateway
+  hostnames:
+    - "blog.dylanmtaylor.com"
+    - "blog.dylanmtaylor.local"
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: dylanmtaylor.com
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /blog
+            statusCode: 301
