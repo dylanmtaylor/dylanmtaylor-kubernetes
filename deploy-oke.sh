@@ -77,6 +77,10 @@ echo "Applying base resources..."
 kubectl apply -k k8s/base/
 
 echo ""
+echo "Deploying monitoring stack (Prometheus)..."
+kubectl kustomize k8s/monitoring/ --enable-helm | kubectl apply --server-side=true -f -
+
+echo ""
 echo "Deploying apps..."
 kubectl apply -k k8s/apps/
 
