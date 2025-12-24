@@ -43,10 +43,34 @@ spec:
     allowedRoutes:
       namespaces:
         from: Same
+  - name: https-apex
+    port: 443
+    protocol: HTTPS
+    hostname: "dylanmtaylor.com"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: dylanmtaylor-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
   - name: https-local
     port: 443
     protocol: HTTPS
     hostname: "*.dylanmtaylor.local"
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: dylanmtaylor-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: https-local-apex
+    port: 443
+    protocol: HTTPS
+    hostname: "dylanmtaylor.local"
     tls:
       mode: Terminate
       certificateRefs:
@@ -84,7 +108,11 @@ spec:
   - name: dylanmtaylor-gateway
     sectionName: https
   - name: dylanmtaylor-gateway
+    sectionName: https-apex
+  - name: dylanmtaylor-gateway
     sectionName: https-local
+  - name: dylanmtaylor-gateway
+    sectionName: https-local-apex
   hostnames:
   - "www.dylanmtaylor.com"
   - "dylanmtaylor.com"
