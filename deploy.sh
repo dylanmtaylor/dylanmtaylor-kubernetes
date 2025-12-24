@@ -96,7 +96,27 @@ kubectl apply -k k8s/base/
 
 echo ""
 echo "Deploying monitoring stack (Prometheus)..."
-kubectl kustomize k8s/monitoring/ --enable-helm | kubectl apply --server-side=true -f -
+# Add prometheus-community helm repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1
+helm repo update >/dev/null 2>&1
+
+# Install kube-prometheus-stack with Helm
+if ! helm list -n monitoring | grep -q kube-prometheus-stack; then
+    echo "Installing kube-prometheus-stack..."
+    helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+        --version 80.6.0 \
+        --namespace monitoring \
+        --create-namespace \
+        --wait \
+        --timeout 600s
+else
+    echo "kube-prometheus-stack already installed, upgrading..."
+    helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+        --version 80.6.0 \
+        --namespace monitoring \
+        --wait \
+        --timeout 600s
+fi
 
 echo ""
 echo "Deploying apps..."
