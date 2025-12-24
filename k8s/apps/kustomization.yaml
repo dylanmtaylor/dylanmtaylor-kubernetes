@@ -29,3 +29,4 @@ resources:
   - gateway.yaml
   - envoyproxy.yaml
   - compression-policy.yaml
+  - real-ip-policy.yaml
