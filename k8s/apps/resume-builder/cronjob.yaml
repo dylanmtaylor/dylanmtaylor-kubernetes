@@ -33,10 +33,18 @@ spec:
 
                   # Fetch R2 credentials from OCI Vault using instance principal
                   echo "Fetching R2 credentials from OCI Vault..."
-                  SECRET_OCID="ocid1.vaultsecret.oc1.iad.amaaaaaap6rgyvaatoqnhqee33f2e5b3qywvx3oarwyri2fddzdz4h5bzdsq"
-                  /opt/venv/bin/oci secrets secret-bundle get \
+                  COMPARTMENT_ID="ocid1.tenancy.oc1..aaaaaaaapryt5njqmdf6nt5n4q7kj7cjgqbivfkcho6rxlh4prbn4wvlppaq"
+                  VAULT_OCID=$(/opt/venv/bin/oci kms management vault list \
                     --auth instance_principal \
-                    --secret-id "$SECRET_OCID" 2>&1 || echo "OCI CLI failed"
+                    --compartment-id "$COMPARTMENT_ID" \
+                    --query "data[?\"display-name\"=='dylanmtaylor'].id | [0]" --raw-output)
+                  SECRET_OCID=$(/opt/venv/bin/oci vault secret list \
+                    --auth instance_principal \
+                    --compartment-id "$COMPARTMENT_ID" \
+                    --vault-id "$VAULT_OCID" \
+                    --name r2-credentials \
+                    --lifecycle-state ACTIVE \
+                    --query 'data[0].id' --raw-output)
                   CREDS=$(/opt/venv/bin/oci secrets secret-bundle get \
                     --auth instance_principal \
                     --secret-id "$SECRET_OCID" \
