@@ -159,40 +159,6 @@ if [ "$IS_OKE" = true ]; then
     fi
 fi
 
-# Apply OCI credentials secret for resume-builder
-echo ""
-echo "Applying OCI credentials secret..."
-if [ -f "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem" ] && [ -f "k8s/apps/resume-builder/secret.yaml" ]; then
-    if ! kubectl get secret oci-credentials -n dylanmtaylor &>/dev/null; then
-        # Create a temporary file with the private key substituted
-        TEMP_SECRET=$(mktemp)
-        
-        # Read the secret file and replace the placeholder section
-        awk '
-        /oci_api_key\.pem: \|/ {
-            print $0
-            # Skip the placeholder lines
-            getline; getline; getline
-            # Insert the actual private key
-            while ((getline line < "/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem") > 0) {
-                print "    " line
-            }
-            close("/var/home/dylan/.oci/sessions/DEFAULT/oci_api_key.pem")
-            next
-        }
-        { print }
-        ' k8s/apps/resume-builder/secret.yaml > "$TEMP_SECRET"
-        
-        # Apply the secret and clean up
-        kubectl apply -f "$TEMP_SECRET"
-        rm -f "$TEMP_SECRET"
-    else
-        echo "OCI credentials secret already exists, skipping..."
-    fi
-else
-    echo "Warning: OCI API key or secret template not found, skipping OCI credentials secret..."
-fi
-
 echo ""
 echo "Deployment complete!"
 echo ""

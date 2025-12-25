@@ -31,11 +31,19 @@ spec:
 
                   echo "$(date): Starting resume build process..."
 
-                  # Set up OCI CLI configuration from secret
-                  mkdir -p /root/.oci
-                  cp /oci-credentials/config /root/.oci/config
-                  cp /oci-credentials/oci_api_key.pem /root/.oci/oci_api_key.pem
-                  chmod 600 /root/.oci/oci_api_key.pem
+                  # Fetch R2 credentials from OCI Vault using instance principal
+                  echo "Fetching R2 credentials from OCI Vault..."
+                  SECRET_OCID="ocid1.vaultsecret.oc1.iad.amaaaaaap6rgyvaatoqnhqee33f2e5b3qywvx3oarwyri2fddzdz4h5bzdsq"
+                  /opt/venv/bin/oci secrets secret-bundle get \
+                    --auth instance_principal \
+                    --secret-id "$SECRET_OCID" 2>&1 || echo "OCI CLI failed"
+                  CREDS=$(/opt/venv/bin/oci secrets secret-bundle get \
+                    --auth instance_principal \
+                    --secret-id "$SECRET_OCID" \
+                    --query 'data."secret-bundle-content".content' --raw-output | base64 -d)
+                  export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r '.access_key_id')
+                  export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r '.secret_access_key')
+                  CF_ACCOUNT_ID=$(echo "$CREDS" | jq -r '.account_id')
 
                   # Clone the resume repository
                   echo "Cloning resume repository..."
@@ -59,37 +67,15 @@ spec:
 
                   echo "Resume built successfully: $(ls -lh /tmp/output/dylan-resume.pdf)"
 
-                  # Upload to OCI Object Storage
-                  echo "Uploading to OCI Object Storage..."
-
-                  # Get namespace (using API key auth, no --auth flag needed)
-                  echo "Getting OCI namespace..."
-                  NAMESPACE=$(/opt/venv/bin/oci os ns get --query data --raw-output)
-                  echo "Namespace: $NAMESPACE"
-
-                  # Upload the file
-                  echo "Uploading file..."
-                  /opt/venv/bin/oci os object put \
-                    --namespace-name "$NAMESPACE" \
-                    --bucket-name dylanmtaylor_public_files \
-                    --file /tmp/output/dylan-resume.pdf \
-                    --name dylan-resume.pdf \
-                    --force
+                  # Upload to Cloudflare R2
+                  echo "Uploading to Cloudflare R2..."
+                  aws s3 cp /tmp/output/dylan-resume.pdf \
+                    s3://dylanmtaylor-public-files/dylan-resume.pdf \
+                    --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
                   echo "$(date): Resume uploaded successfully!"
-              volumeMounts:
-                - name: oci-credentials
-                  mountPath: /oci-credentials
-                  readOnly: true
               resources:
                 requests:
-                  memory: "512Mi"
-                  cpu: "100m"
+                  memory: "256Mi"
                 limits:
                   memory: "2Gi"
-                  cpu: "1000m"
-          volumes:
-            - name: oci-credentials
-              secret:
-                secretName: oci-credentials
-                defaultMode: 0400
