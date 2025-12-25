@@ -33,7 +33,7 @@ spec:
 
                   # Fetch R2 credentials from OCI Vault using instance principal
                   echo "Fetching R2 credentials from OCI Vault..."
-                  COMPARTMENT_ID="ocid1.tenancy.oc1..aaaaaaaapryt5njqmdf6nt5n4q7kj7cjgqbivfkcho6rxlh4prbn4wvlppaq"
+                  COMPARTMENT_ID=$(curl -sH "Authorization: Bearer Oracle" http://169.254.169.254/opc/v2/instance/ | jq -r '.compartmentId')
                   VAULT_OCID=$(/opt/venv/bin/oci kms management vault list \
                     --auth instance_principal \
                     --compartment-id "$COMPARTMENT_ID" \
