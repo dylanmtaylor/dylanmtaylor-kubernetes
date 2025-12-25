@@ -60,20 +60,7 @@ else
     kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
 fi
 
-# Install OCI Native Ingress Controller (OKE only)
-if [ "$IS_OKE" = true ]; then
-    echo ""
-    echo "Checking if OCI Native Ingress Controller is already installed..."
-    if kubectl get deployment release-name-oci-native-ingress-controller -n native-ingress-controller-system 2>/dev/null | grep -q release-name-oci-native-ingress-controller; then
-        echo "OCI Native Ingress Controller is already installed, skipping installation..."
-    else
-        echo "Installing OCI Native Ingress Controller..."
-        kubectl apply -f k8s/base/oci-native-ingress-controller.yaml
-        # Wait for OCI Native Ingress Controller to be ready
-        echo "Waiting for OCI Native Ingress Controller to be ready..."
-        kubectl wait --for=condition=Available --timeout=300s deployment/release-name-oci-native-ingress-controller -n native-ingress-controller-system
-    fi
-fi
+
 
 # Install Envoy Gateway
 echo ""
