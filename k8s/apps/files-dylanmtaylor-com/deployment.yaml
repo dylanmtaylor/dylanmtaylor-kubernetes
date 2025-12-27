@@ -15,6 +15,10 @@ spec:
       labels:
         app: files-dylanmtaylor-com
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: nginx
           image: docker.io/nginx:alpine

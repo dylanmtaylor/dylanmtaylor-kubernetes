@@ -106,11 +106,13 @@ kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server 
 # Apply base resources
 echo ""
 echo "Applying base resources..."
+kubectl apply -k k8s/base/
 
 # For OKE clusters, dynamically create secretstore with vault OCID
 if [ "$IS_OKE" = true ]; then
     echo "Looking up vault OCID for 'dylanmtaylor' vault..."
-    VAULT_OCID=$(oci kms management vault list --compartment-id $(oci iam compartment list --query 'data[?name==`dylanmtaylor`].id | [0]' --raw-output) --query 'data[?"display-name"==`dylanmtaylor`].id | [0]' --raw-output)
+    TENANCY_OCID=$(oci iam compartment list --query 'data[0]."compartment-id"' --raw-output)
+    VAULT_OCID=$(oci kms management vault list --compartment-id $TENANCY_OCID --all --query 'data[?"display-name"==`dylanmtaylor`].id | [0]' --raw-output)
     
     if [ -n "$VAULT_OCID" ]; then
         echo "Found vault OCID: $VAULT_OCID"
@@ -130,8 +132,6 @@ spec:
 EOF
     fi
 fi
-
-kubectl apply -k k8s/base/
 
 echo ""
 echo "Deploying monitoring stack (Prometheus)..."

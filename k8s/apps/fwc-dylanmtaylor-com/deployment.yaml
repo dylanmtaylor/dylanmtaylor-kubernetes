@@ -15,6 +15,10 @@ spec:
       labels:
         app: fwc-dylanmtaylor-com
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       dnsPolicy: ClusterFirst
       dnsConfig:
         options:
