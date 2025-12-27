@@ -11,7 +11,7 @@ spec:
         replicas: 4
       envoyService:
         type: LoadBalancer
-        loadBalancerIP: "129.80.142.204"
+        loadBalancerIP: "193.122.171.224"
         annotations:
           oci.oraclecloud.com/load-balancer-type: "lb"
           service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
