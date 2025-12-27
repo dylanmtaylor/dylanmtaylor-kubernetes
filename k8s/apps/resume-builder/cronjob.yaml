@@ -22,6 +22,22 @@ spec:
           containers:
             - name: builder
               image: ghcr.io/dylanmtaylor/resume-builder:latest
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2-credentials
+                      key: access_key_id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2-credentials
+                      key: secret_access_key
+                - name: CF_ACCOUNT_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: r2-credentials
+                      key: account_id
               command: ["/bin/bash"]
               args:
                 - -c
@@ -30,28 +46,6 @@ spec:
                   set -e
 
                   echo "$(date): Starting resume build process..."
-
-                  # Fetch R2 credentials from OCI Vault using instance principal
-                  echo "Fetching R2 credentials from OCI Vault..."
-                  COMPARTMENT_ID=$(curl -sH "Authorization: Bearer Oracle" http://169.254.169.254/opc/v2/instance/ | jq -r '.compartmentId')
-                  VAULT_OCID=$(/opt/venv/bin/oci kms management vault list \
-                    --auth instance_principal \
-                    --compartment-id "$COMPARTMENT_ID" \
-                    --query "data[?\"display-name\"=='dylanmtaylor'].id | [0]" --raw-output)
-                  SECRET_OCID=$(/opt/venv/bin/oci vault secret list \
-                    --auth instance_principal \
-                    --compartment-id "$COMPARTMENT_ID" \
-                    --vault-id "$VAULT_OCID" \
-                    --name r2-credentials \
-                    --lifecycle-state ACTIVE \
-                    --query 'data[0].id' --raw-output)
-                  CREDS=$(/opt/venv/bin/oci secrets secret-bundle get \
-                    --auth instance_principal \
-                    --secret-id "$SECRET_OCID" \
-                    --query 'data."secret-bundle-content".content' --raw-output | base64 -d)
-                  export AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r '.access_key_id')
-                  export AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r '.secret_access_key')
-                  CF_ACCOUNT_ID=$(echo "$CREDS" | jq -r '.account_id')
 
                   # Clone the resume repository
                   echo "Cloning resume repository..."

@@ -23,6 +23,7 @@ resources:
 
   # Resume Builder (CronJob)
   - resume-builder/serviceaccount.yaml
+  - resume-builder/external-secret.yaml
   - resume-builder/cronjob.yaml
 
   # Gateway API configuration

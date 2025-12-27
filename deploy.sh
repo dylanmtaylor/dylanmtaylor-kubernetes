@@ -76,6 +76,22 @@ fi
 echo "Waiting for Envoy Gateway to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
 
+# Install external-secrets operator
+echo ""
+if helm list -n external-secrets-system | grep -q "^external-secrets\s"; then
+    echo "external-secrets is already installed, upgrading..."
+    helm upgrade external-secrets external-secrets/external-secrets -n external-secrets-system
+else
+    echo "Installing external-secrets operator..."
+    helm repo add external-secrets https://charts.external-secrets.io >/dev/null 2>&1
+    helm repo update >/dev/null 2>&1
+    helm install external-secrets external-secrets/external-secrets -n external-secrets-system --create-namespace
+fi
+
+# Wait for external-secrets to be ready
+echo "Waiting for external-secrets to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/external-secrets -n external-secrets-system
+
 # Install metrics-server
 echo ""
 echo "Installing metrics-server in HA mode..."
