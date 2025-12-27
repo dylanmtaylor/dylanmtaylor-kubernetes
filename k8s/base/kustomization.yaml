@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - cert-manager-issuer.yaml
   - external-secret-lb-ip.yaml
+  - external-secret-dhi.yaml
