@@ -6,7 +6,7 @@ metadata:
 data:
   NGINX_CONFIG: |
     server {
-      listen 80;
+      listen 8080;
       server_name files.dylanmtaylor.com files.dylanmtaylor.local;
       
       # Redirect root to index.html

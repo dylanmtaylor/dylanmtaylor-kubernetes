@@ -17,23 +17,30 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
       volumes:
         - name: website-content
           emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: www-dylanmtaylor-com-config
+            items:
+              - key: default.conf
+                path: default.conf
       containers:
-        - name: nginx-php-fpm
-          image: docker.io/richarvey/nginx-php-fpm:3.1.6
+        - name: nginx
+          image: docker.io/nginxinc/nginx-unprivileged:alpine
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
-          envFrom:
-            - configMapRef:
-                name: www-dylanmtaylor-com-config
           volumeMounts:
             - name: website-content
-              mountPath: /var/www/html
+              mountPath: /data
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
           resources:
             requests:
               memory: "128Mi"
@@ -43,16 +50,15 @@ spec:
               cpu: "500m"
 
         - name: content-updater
-          image: alpine:latest
+          image: docker.io/curlimages/curl:latest
+          securityContext:
+            runAsUser: 101
           command: ["/bin/sh"]
           args:
             - -c
             - |
               #!/bin/sh
               set -e
-
-              # Install required packages
-              apk add --no-cache curl unzip rsync jq
 
               ARTIFACT_URL="https://gitlab.com/dylanmtaylor/dylanmtaylor.gitlab.io/-/jobs/artifacts/master/download?job=pages"
               LAST_COMMIT_FILE="/tmp/last_commit"
@@ -62,24 +68,28 @@ spec:
                 echo "$(date): Checking for updates..."
                 
                 # Get latest commit SHA from GitLab API
-                LATEST_COMMIT=$(curl -s "https://gitlab.com/api/v4/projects/dylanmtaylor%2Fdylanmtaylor.gitlab.io/repository/commits/master" | jq -r '.id' 2>/dev/null || echo "")
+                LATEST_COMMIT=$(curl -s "https://gitlab.com/api/v4/projects/dylanmtaylor%2Fdylanmtaylor.gitlab.io/repository/commits/master" | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' || echo "")
                 CURRENT_COMMIT=$(cat "$LAST_COMMIT_FILE" 2>/dev/null || echo "")
                 
                 # Check if content changed
                 if [ "$CURRENT_COMMIT" = "$LATEST_COMMIT" ] && [ -n "$LATEST_COMMIT" ]; then
-                  echo "$(date): No changes detected (commit: ${LATEST_COMMIT:0:8}), skipping update"
+                  echo "$(date): No changes detected (commit: $(echo $LATEST_COMMIT | cut -c1-8)), skipping update"
                   return
                 fi
                 
-                echo "$(date): New commit detected (${LATEST_COMMIT:0:8}), updating content..."
+                echo "$(date): New commit detected, updating content..."
                 
                 # Download and extract the site
                 curl -Lo /tmp/site.zip "$ARTIFACT_URL"
-                rm -rf /tmp/site
-                unzip -q /tmp/site.zip -d /tmp/site
+                cd /tmp && unzip -o -q site.zip
                 
-                # Sync to shared volume
-                rsync -rh /tmp/site/public/ /var/www/html/ --delete
+                # Sync to shared volume (atomic via symlink rename)
+                TIMESTAMP=$(date +%s)
+                cp -r /tmp/public /data/content-$TIMESTAMP
+                ln -sfn content-$TIMESTAMP /data/html-new
+                mv /data/html-new /data/html
+                # Cleanup old content dirs
+                find /data -maxdepth 1 -name "content-*" ! -name "content-$TIMESTAMP" -exec rm -rf {} \;
                 
                 # Save new commit SHA
                 echo "$LATEST_COMMIT" > "$LAST_COMMIT_FILE"
@@ -97,7 +107,7 @@ spec:
               done
           volumeMounts:
             - name: website-content
-              mountPath: /var/www/html
+              mountPath: /data
           resources:
             requests:
               memory: "64Mi"

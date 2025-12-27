@@ -21,9 +21,9 @@ spec:
           type: RuntimeDefault
       containers:
         - name: nginx
-          image: docker.io/nginx:alpine
+          image: docker.io/nginxinc/nginx-unprivileged:alpine
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
           volumeMounts:
             - name: nginx-config
