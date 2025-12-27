@@ -60,22 +60,6 @@ else
     kubectl rollout status deployment cert-manager -n cert-manager --timeout=300s
 fi
 
-
-
-# Install Envoy Gateway
-echo ""
-if helm list -n envoy-gateway-system | grep -q "^eg\s"; then
-    echo "Envoy Gateway is already installed, upgrading..."
-    helm upgrade eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system
-else
-    echo "Installing Envoy Gateway..."
-    helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace
-fi
-
-# Wait for Envoy Gateway to be ready
-echo "Waiting for Envoy Gateway to be ready..."
-kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
-
 # Install external-secrets operator
 echo ""
 if helm list -n external-secrets-system | grep -q "^external-secrets\s"; then
@@ -91,6 +75,20 @@ fi
 # Wait for external-secrets to be ready
 echo "Waiting for external-secrets to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/external-secrets -n external-secrets-system
+
+# Install Envoy Gateway
+echo ""
+if helm list -n envoy-gateway-system | grep -q "^eg\s"; then
+    echo "Envoy Gateway is already installed, upgrading..."
+    helm upgrade eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system
+else
+    echo "Installing Envoy Gateway..."
+    helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace
+fi
+
+# Wait for Envoy Gateway to be ready
+echo "Waiting for Envoy Gateway to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/envoy-gateway -n envoy-gateway-system
 
 # Install metrics-server
 echo ""
@@ -142,20 +140,20 @@ kubectl apply -k k8s/apps/
 if [ "$IS_OKE" = true ]; then
     echo ""
     echo "Setting static IP for load balancer..."
-    NLB_IP=$(dig +short nlb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-    if [ -z "$NLB_IP" ]; then
-        echo "Error: Could not resolve nlb.dylanmtaylor.com to an IP address."
+    LB_IP=$(dig +short lb.dylanmtaylor.com | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+    if [ -z "$LB_IP" ]; then
+        echo "Error: Could not resolve lb.dylanmtaylor.com to an IP address."
         exit 1
     fi
 
     # Update EnvoyProxy with dynamic IP (only if it exists)
     if kubectl get envoyproxy oci-loadbalancer -n dylanmtaylor &>/dev/null; then
         CURRENT_IP=$(kubectl get envoyproxy oci-loadbalancer -n dylanmtaylor -o jsonpath='{.spec.provider.kubernetes.envoyService.loadBalancerIP}' 2>/dev/null || echo "")
-        if [ "$CURRENT_IP" != "$NLB_IP" ]; then
-            echo "Updating EnvoyProxy loadBalancerIP from '$CURRENT_IP' to '$NLB_IP'..."
-            kubectl patch envoyproxy oci-loadbalancer -n dylanmtaylor --type='merge' -p="{\"spec\":{\"provider\":{\"kubernetes\":{\"envoyService\":{\"loadBalancerIP\":\"$NLB_IP\"}}}}}"
+        if [ "$CURRENT_IP" != "$LB_IP" ]; then
+            echo "Updating EnvoyProxy loadBalancerIP from '$CURRENT_IP' to '$LB_IP'..."
+            kubectl patch envoyproxy oci-loadbalancer -n dylanmtaylor --type='merge' -p="{\"spec\":{\"provider\":{\"kubernetes\":{\"envoyService\":{\"loadBalancerIP\":\"$LB_IP\"}}}}}"
         else
-            echo "EnvoyProxy loadBalancerIP is already set to $NLB_IP, skipping..."
+            echo "EnvoyProxy loadBalancerIP is already set to $LB_IP, skipping..."
         fi
     else
         echo "EnvoyProxy oci-loadbalancer not found, will be created by app deployment..."

@@ -8,7 +8,7 @@ This cluster powers the entirety of dylanmtaylor.com, all orchestrated with the 
 
 ## Architecture
 - **Cluster**: Oracle Kubernetes Engine (OKE) running on 4x 1 CPU, 4 GiB RAM ARM64 Ampere "always free" instances 
-- **Ingress**: Envoy Gateway using an OCI native Network Load Balancer (static IP allocation)
+- **Ingress**: Envoy Gateway using an OCI native Load Balancer (static IP allocation)
 - **Networking**: Pod networking is handled with flannel
 - **Storage**: OCI Object Storage for persistent data (files served from files.dylanmtaylor.com)
 - **Automation**: Everything deployed with a single script, and Kustomize is used for configuration management
