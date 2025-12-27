@@ -4,5 +4,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - cert-manager-issuer.yaml
-  - external-secrets-secretstore.yaml
   - external-secret-lb-ip.yaml

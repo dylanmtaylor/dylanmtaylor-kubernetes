@@ -106,6 +106,31 @@ kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server 
 # Apply base resources
 echo ""
 echo "Applying base resources..."
+
+# For OKE clusters, dynamically create secretstore with vault OCID
+if [ "$IS_OKE" = true ]; then
+    echo "Looking up vault OCID for 'dylanmtaylor' vault..."
+    VAULT_OCID=$(oci kms management vault list --compartment-id $(oci iam compartment list --query 'data[?name==`dylanmtaylor`].id | [0]' --raw-output) --query 'data[?"display-name"==`dylanmtaylor`].id | [0]' --raw-output)
+    
+    if [ -n "$VAULT_OCID" ]; then
+        echo "Found vault OCID: $VAULT_OCID"
+        # Create secretstore with dynamic OCID
+        cat <<EOF | kubectl apply -f -
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: oci-vault
+  namespace: dylanmtaylor
+spec:
+  provider:
+    oracle:
+      vault: "$VAULT_OCID"
+      region: us-ashburn-1
+      principalType: InstancePrincipal
+EOF
+    fi
+fi
+
 kubectl apply -k k8s/base/
 
 echo ""
