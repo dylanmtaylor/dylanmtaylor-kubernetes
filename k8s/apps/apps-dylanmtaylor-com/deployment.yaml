@@ -33,6 +33,7 @@ spec:
           image: dhi.io/wait-for-it:0
           securityContext:
             runAsUser: 65534  # nobody user - run init as non-root
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           args: ['gitlab.com:443', '--timeout=60']
@@ -50,6 +51,7 @@ spec:
           image: dhi.io/nginx:1
           securityContext:
             runAsUser: 65532  # nginx user in DHI image
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           ports:
@@ -73,6 +75,7 @@ spec:
           image: dhi.io/php:8-fpm
           securityContext:
             runAsUser: 65532  # nonroot user in DHI images
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           volumeMounts:
@@ -90,6 +93,7 @@ spec:
           image: docker.io/bitnami/git:latest
           securityContext:
             runAsUser: 1001  # bitnami git image user
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           command: ["/bin/bash"]

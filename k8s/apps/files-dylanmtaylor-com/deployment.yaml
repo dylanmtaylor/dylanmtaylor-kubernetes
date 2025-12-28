@@ -31,6 +31,7 @@ spec:
           image: dhi.io/nginx:1
           securityContext:
             runAsUser: 65532  # nginx user in DHI image
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           ports:
