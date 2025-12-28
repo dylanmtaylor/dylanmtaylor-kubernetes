@@ -4,7 +4,21 @@ metadata:
   name: apps-dylanmtaylor-com-config
   namespace: dylanmtaylor
 data:
-  GIT_NAME: "Dylan M. Taylor"
-  GIT_EMAIL: "dylan@dylanmtaylor.com"
-  GIT_REPO: "https://gitlab.com/dylanmtaylor/apps-dylanmtaylor-com.git"
-  VIRTUAL_HOST: "apps.dylanmtaylor.com,apps.dylanmtaylor.local"
+  nginx.conf: |
+    server {
+        listen 8080;
+        server_name localhost;
+        root /data/html;
+        index index.php index.html;
+        
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+        
+        location ~ \.php$ {
+            fastcgi_pass 127.0.0.1:9000;
+            fastcgi_index index.php;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }

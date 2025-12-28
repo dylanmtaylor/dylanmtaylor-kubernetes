@@ -17,9 +17,11 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        fsGroup: 101
+        fsGroup: 65532  # nginx group - allows shared volume writes
         seccompProfile:
           type: RuntimeDefault
+      imagePullSecrets:
+        - name: dhi-registry
       volumes:
         - name: website-content
           emptyDir: {}
@@ -31,7 +33,7 @@ spec:
                 path: default.conf
       containers:
         - name: nginx
-          image: docker.io/nginxinc/nginx-unprivileged:alpine
+          image: dhi.io/nginx:1
           ports:
             - containerPort: 8080
               name: http
@@ -50,9 +52,9 @@ spec:
               cpu: "500m"
 
         - name: content-updater
-          image: docker.io/curlimages/curl:latest
+          image: docker.io/bitnami/git:latest
           securityContext:
-            runAsUser: 101
+            runAsUser: 1001  # bitnami git image user
           command: ["/bin/sh"]
           args:
             - -c

@@ -19,9 +19,11 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+      imagePullSecrets:
+        - name: dhi-registry
       containers:
         - name: nginx
-          image: docker.io/nginxinc/nginx-unprivileged:alpine
+          image: dhi.io/nginx:1
           ports:
             - containerPort: 8080
               name: http

@@ -16,37 +16,116 @@ spec:
         app: apps-dylanmtaylor-com
     spec:
       securityContext:
+        runAsNonRoot: true
+        fsGroup: 1001  # bitnami group - allows shared volume writes
         seccompProfile:
           type: RuntimeDefault
+      imagePullSecrets:
+        - name: dhi-registry
       dnsPolicy: ClusterFirst
       initContainers:
-      - name: wait-for-dns
-        image: busybox:1.36
-        securityContext:
-          runAsUser: 65534  # nobody user - run init as non-root
-        command: ['sh', '-c', 'until nslookup gitlab.com; do echo waiting for DNS; sleep 2; done']
-      containers:
-      - name: nginx-php-fpm
-        image: docker.io/richarvey/nginx-php-fpm:3.1.6
-        ports:
-        - containerPort: 80
-          name: http
-        envFrom:
-        - configMapRef:
-            name: apps-dylanmtaylor-com-config
-        volumeMounts:
-        - name: www-errors
-          mountPath: /var/www/errors
-          readOnly: true
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: wait-for-dns
+          image: dhi.io/wait-for-it:0
+          securityContext:
+            runAsUser: 65534  # nobody user - run init as non-root
+          command: ['wait-for-it', 'gitlab.com:443', '--timeout=60']
       volumes:
-      - name: www-errors
-        hostPath:
-          path: /var/www/errors
-          type: DirectoryOrCreate
+        - name: app-content
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: apps-dylanmtaylor-com-config
+            items:
+              - key: nginx.conf
+                path: default.conf
+      containers:
+        - name: nginx
+          image: dhi.io/nginx:1
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: app-content
+              mountPath: /data
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+
+        - name: php-fpm
+          image: dhi.io/php:8-fpm
+          securityContext:
+            runAsUser: 65532  # nonroot user in DHI images
+          volumeMounts:
+            - name: app-content
+              mountPath: /data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+        - name: content-updater
+          image: docker.io/bitnami/git:latest
+          securityContext:
+            runAsUser: 1001  # bitnami git image user
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              #!/bin/bash
+              set -e
+              
+              GIT_REPO="https://gitlab.com/dylanmtaylor/apps-dylanmtaylor-com.git"
+              LAST_COMMIT_FILE="/tmp/last_commit"
+              
+              update_content() {
+                echo "$(date): Checking for updates..."
+                
+                LATEST_COMMIT=$(git ls-remote "$GIT_REPO" HEAD | cut -f1 || echo "")
+                CURRENT_COMMIT=$(cat "$LAST_COMMIT_FILE" 2>/dev/null || echo "")
+                
+                if [ "$CURRENT_COMMIT" = "$LATEST_COMMIT" ] && [ -n "$LATEST_COMMIT" ]; then
+                  echo "$(date): No changes detected, skipping"
+                  return
+                fi
+                
+                echo "$(date): Updating content..."
+                
+                TIMESTAMP=$(date +%s)
+                git clone --depth 1 "$GIT_REPO" /data/content-$TIMESTAMP
+                
+                ln -sfn content-$TIMESTAMP /data/html-new
+                mv /data/html-new /data/html
+                
+                # Cleanup old
+                find /data -maxdepth 1 -name "content-*" ! -name "content-$TIMESTAMP" -exec rm -rf {} \;
+                
+                echo "$LATEST_COMMIT" > "$LAST_COMMIT_FILE"
+                echo "$(date): Content updated"
+              }
+              
+              update_content
+              
+              while true; do
+                sleep 300
+                update_content
+              done
+          volumeMounts:
+            - name: app-content
+              mountPath: /data
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
