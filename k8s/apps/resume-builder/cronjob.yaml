@@ -27,6 +27,9 @@ spec:
             - name: builder
               image: ghcr.io/dylanmtaylor/resume-builder:latest
               securityContext:
+                runAsUser: 1000
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
                 capabilities:
                   drop: ["ALL"]
               env:
