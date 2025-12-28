@@ -64,17 +64,18 @@ fi
 KEEL_OPTS=(--set keel.policy=major --set keel.trigger=poll --set "keel.pollSchedule=@every 10m")
 
 # Install external-secrets operator
+ES_VERSION=$(helm show chart external-secrets/external-secrets 2>/dev/null | grep appVersion | awk '{print $2}')
 echo ""
 if helm list -n external-secrets-system | grep -q "^external-secrets\s"; then
     echo "external-secrets is already installed, upgrading..."
     helm upgrade external-secrets external-secrets/external-secrets -n external-secrets-system \
-        "${KEEL_OPTS[@]}" --set "keel.images[0].repository=image.repository" --set "keel.images[0].tag=image.tag"
+        --set "image.tag=$ES_VERSION" "${KEEL_OPTS[@]}" --set "keel.images[0].repository=image.repository" --set "keel.images[0].tag=image.tag"
 else
     echo "Installing external-secrets operator..."
     helm repo add external-secrets https://charts.external-secrets.io >/dev/null 2>&1
     helm repo update >/dev/null 2>&1
     helm install external-secrets external-secrets/external-secrets -n external-secrets-system --create-namespace \
-        "${KEEL_OPTS[@]}" --set "keel.images[0].repository=image.repository" --set "keel.images[0].tag=image.tag"
+        --set "image.tag=$ES_VERSION" "${KEEL_OPTS[@]}" --set "keel.images[0].repository=image.repository" --set "keel.images[0].tag=image.tag"
 fi
 
 # Wait for external-secrets to be ready
@@ -82,14 +83,17 @@ echo "Waiting for external-secrets to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/external-secrets -n external-secrets-system
 
 # Install Envoy Gateway
+EG_VERSION=$(helm show chart oci://docker.io/envoyproxy/gateway-helm 2>/dev/null | grep appVersion | awk '{print $2}')
 echo ""
 if helm list -n envoy-gateway-system | grep -q "^eg\s"; then
     echo "Envoy Gateway is already installed, upgrading..."
-    helm upgrade eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system \
+    helm upgrade eg oci://docker.io/envoyproxy/gateway-helm -n envoy-gateway-system \
+        --set "deployment.envoyGateway.image.repository=docker.io/envoyproxy/gateway" --set "deployment.envoyGateway.image.tag=$EG_VERSION" \
         "${KEEL_OPTS[@]}" --set "keel.images[0].repository=deployment.envoyGateway.image.repository" --set "keel.images[0].tag=deployment.envoyGateway.image.tag"
 else
     echo "Installing Envoy Gateway..."
-    helm install eg oci://docker.io/envoyproxy/gateway-helm --version v1.6.1 -n envoy-gateway-system --create-namespace \
+    helm install eg oci://docker.io/envoyproxy/gateway-helm -n envoy-gateway-system --create-namespace \
+        --set "deployment.envoyGateway.image.repository=docker.io/envoyproxy/gateway" --set "deployment.envoyGateway.image.tag=$EG_VERSION" \
         "${KEEL_OPTS[@]}" --set "keel.images[0].repository=deployment.envoyGateway.image.repository" --set "keel.images[0].tag=deployment.envoyGateway.image.tag"
 fi
 
@@ -163,11 +167,13 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update >/dev/null 2>&1
 
 # Install kube-prometheus-stack with Helm
+PROM_VERSION=$(helm show chart prometheus-community/kube-prometheus-stack 2>/dev/null | grep appVersion | awk '{print $2}')
 if ! helm list -n monitoring | grep -q kube-prometheus-stack; then
     echo "Installing kube-prometheus-stack..."
     helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
         --namespace monitoring \
         --create-namespace \
+        --set "prometheusOperator.image.tag=$PROM_VERSION" \
         "${KEEL_OPTS[@]}" --set "keel.images[0].repository=prometheusOperator.image.repository" --set "keel.images[0].tag=prometheusOperator.image.tag" \
         --wait \
         --timeout 600s
@@ -175,6 +181,7 @@ else
     echo "kube-prometheus-stack already installed, upgrading..."
     helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
         --namespace monitoring \
+        --set "prometheusOperator.image.tag=$PROM_VERSION" \
         "${KEEL_OPTS[@]}" --set "keel.images[0].repository=prometheusOperator.image.repository" --set "keel.images[0].tag=prometheusOperator.image.tag" \
         --wait \
         --timeout 600s
