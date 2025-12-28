@@ -9,6 +9,7 @@ metadata:
     keel.sh/policy: force
     keel.sh/trigger: poll
     keel.sh/pollSchedule: "@every 10m"
+    keel.sh/match-tag: "true"
 spec:
   # Run every 15 minutes
   schedule: "*/15 * * * *"
