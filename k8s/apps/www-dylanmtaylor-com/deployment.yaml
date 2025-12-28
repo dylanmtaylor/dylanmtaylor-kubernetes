@@ -110,7 +110,7 @@ spec:
                 
                 # Download and extract the site
                 curl -Lo /tmp/site.zip "$ARTIFACT_URL"
-                cd /tmp && /tools/unzip -o -q site.zip
+                cd /tmp && /tools/unzip -o site.zip
                 
                 # Sync to shared volume (atomic via symlink rename)
                 TIMESTAMP=$(date +%s)
