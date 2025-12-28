@@ -27,6 +27,8 @@ spec:
           image: dhi.io/awscli:2
           securityContext:
             runAsUser: 1001  # same as content-updater
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -59,6 +61,8 @@ spec:
           image: dhi.io/nginx:1
           securityContext:
             runAsUser: 65532  # nginx user in DHI image
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 8080
               name: http
@@ -80,6 +84,8 @@ spec:
           image: docker.io/bitnami/git:latest
           securityContext:
             runAsUser: 1001  # bitnami git image user
+            capabilities:
+              drop: ["ALL"]
           command: ["/bin/sh"]
           args:
             - -c

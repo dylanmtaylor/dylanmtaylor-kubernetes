@@ -36,7 +36,9 @@ spec:
           image: dhi.io/wait-for-it:0
           securityContext:
             runAsUser: 65534  # nobody user - run init as non-root
-          command: ['wait-for-it', 'gitlab.com:443', '--timeout=60']
+            capabilities:
+              drop: ["ALL"]
+          args: ['gitlab.com:443', '--timeout=60']
       volumes:
         - name: app-content
           emptyDir: {}
@@ -49,6 +51,10 @@ spec:
       containers:
         - name: nginx
           image: dhi.io/nginx:1
+          securityContext:
+            runAsUser: 65532  # nginx user in DHI image
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 8080
               name: http
@@ -70,6 +76,8 @@ spec:
           image: dhi.io/php:8-fpm
           securityContext:
             runAsUser: 65532  # nonroot user in DHI images
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: app-content
               mountPath: /data
@@ -85,6 +93,8 @@ spec:
           image: docker.io/bitnami/git:latest
           securityContext:
             runAsUser: 1001  # bitnami git image user
+            capabilities:
+              drop: ["ALL"]
           command: ["/bin/bash"]
           args:
             - -c

@@ -26,6 +26,9 @@ spec:
           containers:
             - name: builder
               image: ghcr.io/dylanmtaylor/resume-builder:latest
+              securityContext:
+                capabilities:
+                  drop: ["ALL"]
               env:
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:
