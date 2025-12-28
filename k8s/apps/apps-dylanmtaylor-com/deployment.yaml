@@ -20,6 +20,7 @@ spec:
         fsGroup: 1001  # bitnami group - allows shared volume writes
         seccompProfile:
           type: RuntimeDefault
+      automountServiceAccountToken: false
       imagePullSecrets:
         - name: dhi-registry
       dnsPolicy: ClusterFirst
