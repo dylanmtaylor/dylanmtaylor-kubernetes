@@ -24,10 +24,21 @@ spec:
         - name: dhi-registry
       initContainers:
         - name: copy-unzip
-          image: docker.io/alpine:latest
+          image: dhi.io/awscli:2
           securityContext:
             runAsUser: 65534  # nobody user
-          command: ['cp', '/usr/bin/unzip', '/tools/']
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: r2-credentials
+                  key: access_key_id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: r2-credentials
+                  key: secret_access_key
+          args: ['s3', 'cp', 's3://dylanmtaylor-private-files/bin/unzip', '/tools/unzip', '--endpoint-url', 'https://24bed58f117be30c4a0c99a8511ad913.r2.cloudflarestorage.com']
           volumeMounts:
             - name: tools
               mountPath: /tools
@@ -45,6 +56,8 @@ spec:
       containers:
         - name: nginx
           image: dhi.io/nginx:1
+          securityContext:
+            runAsUser: 65532  # nginx user in DHI image
           ports:
             - containerPort: 8080
               name: http
@@ -72,6 +85,8 @@ spec:
             - |
               #!/bin/sh
               set -e
+              
+              chmod +x /tools/unzip
 
               ARTIFACT_URL="https://gitlab.com/dylanmtaylor/dylanmtaylor.gitlab.io/-/jobs/artifacts/master/download?job=pages"
               LAST_COMMIT_FILE="/tmp/last_commit"
