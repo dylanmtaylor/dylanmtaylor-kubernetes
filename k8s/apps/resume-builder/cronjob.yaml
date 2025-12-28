@@ -26,6 +26,7 @@ spec:
           containers:
             - name: builder
               image: ghcr.io/dylanmtaylor/resume-builder:latest
+              imagePullPolicy: Always
               securityContext:
                 runAsUser: 1000
                 runAsNonRoot: true
