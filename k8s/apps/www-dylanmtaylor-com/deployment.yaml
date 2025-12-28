@@ -27,6 +27,7 @@ spec:
           image: dhi.io/awscli:2
           securityContext:
             runAsUser: 1001  # same as content-updater
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           env:
@@ -61,6 +62,7 @@ spec:
           image: dhi.io/nginx:1
           securityContext:
             runAsUser: 65532  # nginx user in DHI image
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           ports:
@@ -84,6 +86,7 @@ spec:
           image: docker.io/bitnami/git:latest
           securityContext:
             runAsUser: 1001  # bitnami git image user
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           command: ["/bin/sh"]
