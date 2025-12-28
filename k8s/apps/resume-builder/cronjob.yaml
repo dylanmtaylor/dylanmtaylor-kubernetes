@@ -5,6 +5,10 @@ metadata:
   namespace: dylanmtaylor
   labels:
     app: resume-builder
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/pollSchedule: "@every 10m"
 spec:
   # Run every 15 minutes
   schedule: "*/15 * * * *"
