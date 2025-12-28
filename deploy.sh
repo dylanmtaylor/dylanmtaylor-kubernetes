@@ -107,12 +107,12 @@ kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server 
 echo ""
 if helm list -n keel | grep -q "^keel\s"; then
     echo "Keel is already installed, upgrading..."
-    helm upgrade keel keel/keel -n keel --set helmProvider.version="v3" --set image.repository=ghcr.io/forcebyte/keel-arm --set image.tag=latest --set resources.limits.memory=256Mi --set resources.requests.memory=128Mi
+    helm upgrade keel keel/keel -n keel --set helmProvider.version="v3" --set image.repository=ghcr.io/forcebyte/keel-arm --set image.tag=latest --set resources.limits.memory=512Mi --set resources.requests.memory=256Mi
 else
     echo "Installing Keel..."
     helm repo add keel https://keel-hq.github.io/keel/ >/dev/null 2>&1
     helm repo update >/dev/null 2>&1
-    helm install keel keel/keel -n keel --create-namespace --set helmProvider.version="v3" --set image.repository=ghcr.io/forcebyte/keel-arm --set image.tag=latest --set resources.limits.memory=256Mi --set resources.requests.memory=128Mi
+    helm install keel keel/keel -n keel --create-namespace --set helmProvider.version="v3" --set image.repository=ghcr.io/forcebyte/keel-arm --set image.tag=latest --set resources.limits.memory=512Mi --set resources.requests.memory=256Mi
 fi
 
 # Wait for Keel to be ready
