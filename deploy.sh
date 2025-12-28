@@ -103,6 +103,22 @@ fi
 echo "Waiting for metrics-server to be ready..."
 kubectl wait --for=condition=Available --timeout=300s deployment/metrics-server -n kube-system
 
+# Install Keel for automatic image updates
+echo ""
+if helm list -n keel | grep -q "^keel\s"; then
+    echo "Keel is already installed, upgrading..."
+    helm upgrade keel keel/keel -n keel --set helmProvider.version="v3" --set image.repository=ghcr.io/forcebyte/keel-arm --set image.tag=latest --set resources.limits.memory=256Mi --set resources.requests.memory=128Mi
+else
+    echo "Installing Keel..."
+    helm repo add keel https://keel-hq.github.io/keel/ >/dev/null 2>&1
+    helm repo update >/dev/null 2>&1
+    helm install keel keel/keel -n keel --create-namespace --set helmProvider.version="v3" --set image.repository=ghcr.io/forcebyte/keel-arm --set image.tag=latest --set resources.limits.memory=256Mi --set resources.requests.memory=128Mi
+fi
+
+# Wait for Keel to be ready
+echo "Waiting for Keel to be ready..."
+kubectl wait --for=condition=Available --timeout=300s deployment/keel -n keel
+
 # Apply base resources
 echo ""
 echo "Applying base resources..."
