@@ -22,8 +22,19 @@ spec:
           type: RuntimeDefault
       imagePullSecrets:
         - name: dhi-registry
+      initContainers:
+        - name: copy-unzip
+          image: docker.io/alpine:latest
+          securityContext:
+            runAsUser: 65534  # nobody user
+          command: ['cp', '/usr/bin/unzip', '/tools/']
+          volumeMounts:
+            - name: tools
+              mountPath: /tools
       volumes:
         - name: website-content
+          emptyDir: {}
+        - name: tools
           emptyDir: {}
         - name: nginx-config
           configMap:
@@ -83,7 +94,7 @@ spec:
                 
                 # Download and extract the site
                 curl -Lo /tmp/site.zip "$ARTIFACT_URL"
-                cd /tmp && unzip -o -q site.zip
+                cd /tmp && /tools/unzip -o -q site.zip
                 
                 # Sync to shared volume (atomic via symlink rename)
                 TIMESTAMP=$(date +%s)
@@ -110,6 +121,8 @@ spec:
           volumeMounts:
             - name: website-content
               mountPath: /data
+            - name: tools
+              mountPath: /tools
           resources:
             requests:
               memory: "64Mi"
