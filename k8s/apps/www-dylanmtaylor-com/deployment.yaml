@@ -26,7 +26,7 @@ spec:
         - name: copy-unzip
           image: dhi.io/awscli:2
           securityContext:
-            runAsUser: 65534  # nobody user
+            runAsUser: 1001  # same as content-updater
           env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -38,6 +38,7 @@ spec:
                 secretKeyRef:
                   name: r2-credentials
                   key: secret_access_key
+          command: ['aws']
           args: ['s3', 'cp', 's3://dylanmtaylor-private-files/bin/unzip', '/tools/unzip', '--endpoint-url', 'https://24bed58f117be30c4a0c99a8511ad913.r2.cloudflarestorage.com']
           volumeMounts:
             - name: tools
