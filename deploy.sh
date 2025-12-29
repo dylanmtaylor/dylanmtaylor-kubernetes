@@ -168,21 +168,20 @@ helm repo update >/dev/null 2>&1
 
 # Install kube-prometheus-stack with Helm
 PROM_VERSION=$(helm show chart prometheus-community/kube-prometheus-stack 2>/dev/null | grep appVersion | awk '{print $2}')
+PROM_KEEL_OPTS=(--set "prometheusOperator.image.tag=$PROM_VERSION" "${KEEL_OPTS[@]}" --set "keel.images[0].repository=prometheusOperator.image.repository" --set "keel.images[0].tag=prometheusOperator.image.tag")
 if ! helm list -n monitoring | grep -q kube-prometheus-stack; then
     echo "Installing kube-prometheus-stack..."
     helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
         --namespace monitoring \
         --create-namespace \
-        --set "prometheusOperator.image.tag=$PROM_VERSION" \
-        "${KEEL_OPTS[@]}" --set "keel.images[0].repository=prometheusOperator.image.repository" --set "keel.images[0].tag=prometheusOperator.image.tag" \
+        "${PROM_KEEL_OPTS[@]}" \
         --wait \
         --timeout 600s
 else
     echo "kube-prometheus-stack already installed, upgrading..."
     helm upgrade kube-prometheus-stack prometheus-community/kube-prometheus-stack \
         --namespace monitoring \
-        --set "prometheusOperator.image.tag=$PROM_VERSION" \
-        "${KEEL_OPTS[@]}" --set "keel.images[0].repository=prometheusOperator.image.repository" --set "keel.images[0].tag=prometheusOperator.image.tag" \
+        "${PROM_KEEL_OPTS[@]}" \
         --wait \
         --timeout 600s
 fi
